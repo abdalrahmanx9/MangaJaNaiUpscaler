@@ -87,10 +87,7 @@ class HelpLabel(QLabel):
     def __init__(self, text, parent=None):
         super().__init__(text, parent)
         self.setWordWrap(True)
-        self.setStyleSheet("""
-            color: #888888; font-size: 12px;
-            padding: 4px 0 0 0;
-        """)
+        self.setProperty("class", "HelpLabel")
         self.setMaximumWidth(700)
         self.setMinimumWidth(400)
 
@@ -99,15 +96,7 @@ class BorderFrame(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFrameShape(QFrame.Shape.StyledPanel)
-        self.setStyleSheet("""
-            QFrame {
-                background-color: #1a1a1a;
-                border: 1px solid #33888888;
-                border-radius: 6px;
-                padding: 12px;
-                margin-top: 12px;
-            }
-        """)
+        self.setProperty("class", "BorderFrame")
         self._layout = QVBoxLayout(self)
         self._layout.setContentsMargins(12, 12, 12, 12)
         self._layout.setSpacing(12)
@@ -119,48 +108,18 @@ class BorderFrame(QFrame):
 class ToggleButton(QPushButton):
     def __init__(self, text, checked=False, parent=None):
         super().__init__(text, parent)
+        self.setProperty("class", "ToggleButton")
         self.setCheckable(True)
         self.setChecked(checked)
         self.setFixedHeight(32)
         self.setMinimumWidth(90)
-        self.setStyleSheet("""
-            QPushButton {
-                background-color: #2d2d2d;
-                color: #cccccc;
-                border: 1px solid #555555;
-                border-radius: 4px;
-                padding: 6px 16px;
-                font-size: 13px;
-            }
-            QPushButton:checked {
-                background-color: #0078d4;
-                color: white;
-                border: 1px solid #0078d4;
-            }
-            QPushButton:hover {
-                background-color: #3d3d3d;
-                border-color: #666;
-            }
-            QPushButton:checked:hover {
-                background-color: #1a8ae8;
-                border-color: #2a9ae8;
-            }
-        """)
 
 
 class DropLineEdit(QLineEdit):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setProperty("class", "DropLineEdit")
         self.setAcceptDrops(True)
-        self.setStyleSheet("""
-            QLineEdit {
-                background-color: #2d2d2d; color: #cccccc;
-                border: 1px dashed #555555; border-radius: 4px; padding: 6px 8px;
-                min-height: 28px;
-            }
-            QLineEdit:hover { border-color: #0078d4; }
-            QLineEdit:focus { border: 1px solid #0078d4; }
-        """)
 
     def dragEnterEvent(self, event: QDragEnterEvent):
         if event.mimeData().hasUrls():
@@ -294,10 +253,7 @@ class ChainWidget(QWidget):
         header.addStretch()
         if not self.is_default:
             self.remove_btn = QPushButton("Remove Chain")
-            self.remove_btn.setStyleSheet("""
-                QPushButton { background-color: #2d2d2d; color: #cccccc; border: 1px solid #555; padding: 4px 12px; border-radius: 3px; }
-                QPushButton:hover { background-color: #3d3d3d; }
-            """)
+            self.remove_btn.setObjectName("removeChainBtn")
             header.addWidget(self.remove_btn)
         main_layout.addLayout(header)
 
@@ -528,13 +484,7 @@ class AppSettingsWidget(QWidget):
         header.addStretch()
         close_btn = QPushButton("✕ Close")
         close_btn.setFixedWidth(90)
-        close_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #c62828; color: white;
-                border: none; border-radius: 4px; padding: 6px 12px;
-            }
-            QPushButton:hover { background-color: #d32f2f; }
-        """)
+        close_btn.setObjectName("closeBtn")
         close_btn.clicked.connect(self.hide)
         header.addWidget(close_btn)
         main_layout.addLayout(header)
@@ -590,14 +540,7 @@ class AppSettingsWidget(QWidget):
         main_layout.addWidget(models_group)
 
         apply_btn = QPushButton("Apply Changes")
-        apply_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #0078d4; color: white;
-                border: none; border-radius: 4px; padding: 10px 20px;
-                font-size: 13px; font-weight: bold;
-            }
-            QPushButton:hover { background-color: #1a8ae8; }
-        """)
+        apply_btn.setObjectName("applyBtn")
         apply_btn.clicked.connect(self._apply_and_close)
         main_layout.addWidget(apply_btn, alignment=Qt.AlignmentFlag.AlignRight)
 
@@ -633,42 +576,6 @@ class MainWindow(QMainWindow):
     def _setup_ui(self):
         self.setWindowTitle("MangaJaNaiConverterGui")
         self.resize(1600, 1050)
-        self.setStyleSheet("""
-            QMainWindow { background-color: #1e1e1e; }
-            QLabel { color: #cccccc; font-size: 13px; }
-            QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
-                background-color: #2d2d2d; color: #cccccc;
-                border: 1px solid #555555; border-radius: 4px; padding: 6px 8px;
-                min-height: 28px;
-            }
-            QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {
-                border: 1px solid #0078d4;
-            }
-            QPushButton {
-                background-color: #333333; color: #cccccc;
-                border: 1px solid #555555; border-radius: 4px; padding: 8px 16px;
-                min-height: 32px;
-            }
-            QPushButton:hover { background-color: #444444; border-color: #666666; }
-            QPushButton:pressed { background-color: #222222; }
-            QCheckBox { color: #cccccc; spacing: 8px; }
-            QCheckBox::indicator { width: 18px; height: 18px; border: 1px solid #555; border-radius: 3px; background: #2d2d2d; }
-            QCheckBox::indicator:checked { background: #0078d4; border-color: #0078d4; }
-            QScrollBar:vertical { background-color: #2d2d2d; width: 14px; border-radius: 7px; }
-            QScrollBar::handle:vertical { background-color: #555555; border-radius: 7px; min-height: 30px; }
-            QScrollBar::handle:vertical:hover { background-color: #777777; }
-            QTabWidget::pane { border: 1px solid #444; background-color: #1e1e1e; border-radius: 4px; }
-            QTabBar::tab { background-color: #2d2d2d; color: #cccccc; padding: 10px 20px; border: 1px solid #444; border-bottom: none; border-radius: 4px 4px 0 0; }
-            QTabBar::tab:selected { background-color: #1e1e1e; border-color: #444; color: white; }
-            QTabBar::tab:hover { background-color: #3d3d3d; }
-            QTextEdit { background-color: #111111; color: #888888; border: 1px solid #333; border-radius: 4px; }
-            QSlider::groove:horizontal { background: #2d2d2d; height: 8px; border-radius: 4px; }
-            QSlider::handle:horizontal { background: #0078d4; width: 18px; margin: -5px 0; border-radius: 9px; }
-            QProgressBar { background-color: #2d2d2d; border: 1px solid #555; border-radius: 4px; height: 20px; }
-            QProgressBar::chunk { background-color: #0078d4; border-radius: 3px; }
-            QSplitter::handle { background-color: #444; }
-            QSplitter::handle:hover { background-color: #0078d4; }
-        """)
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -683,10 +590,8 @@ class MainWindow(QMainWindow):
 
     def _setup_sidebar(self, layout):
         sidebar = QWidget()
+        sidebar.setObjectName("sidebar")
         sidebar.setFixedWidth(300)
-        sidebar.setStyleSheet(
-            "background-color: #252526; border-right: 1px solid #333;"
-        )
         sidebar_layout = QVBoxLayout(sidebar)
         sidebar_layout.setContentsMargins(0, 0, 0, 0)
 
@@ -703,11 +608,7 @@ class MainWindow(QMainWindow):
         self.default_workflow_btn.setCheckable(True)
         self.default_workflow_btn.setChecked(True)
         self.default_workflow_btn.setProperty("workflow_index", 0)
-        self.default_workflow_btn.setStyleSheet("""
-            QPushButton { text-align: left; padding: 10px; background-color: #2d2d2d; color: #cccccc; border: none; font-size: 13px; }
-            QPushButton:checked { background-color: #0078d4; color: white; }
-            QPushButton:hover { background-color: #3d3d3d; }
-        """)
+        self.default_workflow_btn.setProperty("class", "SidebarBtn")
         self.default_workflow_btn.clicked.connect(lambda: self._select_workflow(0))
         self.workflow_buttons.append(self.default_workflow_btn)
         content_layout.addWidget(self.default_workflow_btn)
@@ -721,13 +622,7 @@ class MainWindow(QMainWindow):
         add_custom_btn.setFixedWidth(80)
         add_custom_btn.setFixedHeight(30)
         add_custom_btn.setToolTip("Add custom workflow")
-        add_custom_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #0078d4; color: white;
-                border: none; border-radius: 4px; font-size: 12px; font-weight: bold;
-            }
-            QPushButton:hover { background-color: #1a8ae8; }
-        """)
+        add_custom_btn.setObjectName("addCustomBtn")
         add_custom_btn.clicked.connect(self._add_workflow)
         custom_header.addWidget(add_custom_btn)
         content_layout.addLayout(custom_header)
@@ -738,10 +633,7 @@ class MainWindow(QMainWindow):
         sidebar_layout.addWidget(content)
 
         self.app_settings_btn = QPushButton("⚙ App Settings")
-        self.app_settings_btn.setStyleSheet("""
-            QPushButton { text-align: left; padding: 10px; background-color: #0078d4; color: white; border: none; font-size: 13px; }
-            QPushButton:hover { background-color: #1a8ae8; }
-        """)
+        self.app_settings_btn.setObjectName("appSettingsBtn")
         self.app_settings_btn.clicked.connect(self._show_app_settings)
         sidebar_layout.addWidget(self.app_settings_btn)
 
@@ -767,11 +659,7 @@ class MainWindow(QMainWindow):
             btn.setCheckable(True)
             btn.setChecked(False)
             btn.setProperty("workflow_index", i)
-            btn.setStyleSheet("""
-                QPushButton { text-align: left; padding: 10px; background-color: #2d2d2d; color: #cccccc; border: none; font-size: 13px; }
-                QPushButton:checked { background-color: #0078d4; color: white; }
-                QPushButton:hover { background-color: #3d3d3d; }
-            """)
+            btn.setProperty("class", "SidebarBtn")
             btn.clicked.connect(lambda checked, idx=i: self._select_workflow(idx))
             btn.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             btn.customContextMenuRequested.connect(
@@ -848,10 +736,6 @@ class MainWindow(QMainWindow):
     def _setup_main_area(self, layout):
         self.main_splitter = QSplitter(Qt.Orientation.Vertical)
         self.main_splitter.setHandleWidth(4)
-        self.main_splitter.setStyleSheet("""
-            QSplitter::handle { background-color: #555; }
-            QSplitter::handle:hover { background-color: #0078d4; }
-        """)
 
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
@@ -896,6 +780,7 @@ class MainWindow(QMainWindow):
         self.show_console_btn = QPushButton("Show/Hide")
         self.show_console_btn.setCheckable(True)
         self.show_console_btn.setChecked(True)
+        self.show_console_btn.setObjectName("showConsoleBtn")
         self.show_console_btn.clicked.connect(
             lambda: self.console_section.setVisible(self.show_console_btn.isChecked())
         )
@@ -903,6 +788,7 @@ class MainWindow(QMainWindow):
 
         close_console = QPushButton("✕")
         close_console.setFixedWidth(30)
+        close_console.setObjectName("closeConsoleBtn")
         close_console.clicked.connect(lambda: self.console_section.hide())
         console_header.addWidget(close_console)
 
@@ -915,15 +801,7 @@ class MainWindow(QMainWindow):
         self.console = QTextEdit()
         self.console.setReadOnly(True)
         self.console.setFont(QFont("Consolas", 10))
-        self.console.setStyleSheet("""
-            QTextEdit {
-                background-color: #111111;
-                color: #888888;
-                border: 1px solid #333;
-                border-radius: 3px;
-                padding: 10px;
-            }
-        """)
+        self.console.setObjectName("console")
         console_inner.addWidget(self.console)
 
         console_layout.addWidget(self.console_section)
@@ -936,26 +814,12 @@ class MainWindow(QMainWindow):
         bottom_layout.setContentsMargins(10, 5, 10, 5)
 
         self.upscale_btn = QPushButton("▶ Upscale")
-        self.upscale_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #2e7d32; color: white; font-weight: bold;
-                padding: 8px 24px; border: none; border-radius: 4px; font-size: 13px;
-            }
-            QPushButton:hover { background-color: #388e3c; }
-            QPushButton:disabled { background-color: #555; color: #888; }
-        """)
+        self.upscale_btn.setObjectName("upscaleBtn")
         self.upscale_btn.clicked.connect(self._start_upscale)
         bottom_layout.addWidget(self.upscale_btn)
 
         self.cancel_btn = QPushButton("⏹ Cancel")
-        self.cancel_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #c62828; color: white; font-weight: bold;
-                padding: 8px 24px; border: none; border-radius: 4px; font-size: 13px;
-            }
-            QPushButton:hover { background-color: #d32f2f; }
-            QPushButton:disabled { background-color: #555; color: #888; }
-        """)
+        self.cancel_btn.setObjectName("cancelBtn")
         self.cancel_btn.setEnabled(False)
         self.cancel_btn.clicked.connect(self._cancel_upscale)
         bottom_layout.addWidget(self.cancel_btn)
@@ -963,19 +827,15 @@ class MainWindow(QMainWindow):
         bottom_layout.addStretch()
 
         self.status_left = QLabel("Ready")
-        self.status_left.setStyleSheet("font-size: 11px; color: #aaa;")
         bottom_layout.addWidget(self.status_left)
 
         self.elapsed_label = QLabel("Elapsed: 00:00:00")
-        self.elapsed_label.setStyleSheet("font-size: 10px; color: #aaa;")
         bottom_layout.addWidget(self.elapsed_label)
 
         self.etr_label = QLabel("ETR: --:--:--")
-        self.etr_label.setStyleSheet("font-size: 10px; color: #aaa;")
         bottom_layout.addWidget(self.etr_label)
 
         self.eta_label = QLabel("ETA: --:--:--")
-        self.eta_label.setStyleSheet("font-size: 10px; color: #aaa;")
         bottom_layout.addWidget(self.eta_label)
 
         self.archive_progress = QProgressBar()
@@ -984,13 +844,6 @@ class MainWindow(QMainWindow):
         self.archive_progress.setValue(0)
         self.archive_progress.setTextVisible(True)
         self.archive_progress.setFormat("%v / %m images")
-        self.archive_progress.setStyleSheet("""
-            QProgressBar {
-                background-color: #2d2d2d; border: 1px solid #555;
-                border-radius: 4px; height: 16px;
-            }
-            QProgressBar::chunk { background-color: #0078d4; border-radius: 3px; }
-        """)
         bottom_layout.addWidget(self.archive_progress)
 
         self.total_progress = QProgressBar()
@@ -999,13 +852,7 @@ class MainWindow(QMainWindow):
         self.total_progress.setValue(0)
         self.total_progress.setTextVisible(True)
         self.total_progress.setFormat("%v / %m total")
-        self.total_progress.setStyleSheet("""
-            QProgressBar {
-                background-color: #2d2d2d; border: 1px solid #555;
-                border-radius: 4px; height: 16px;
-            }
-            QProgressBar::chunk { background-color: #4CAF50; border-radius: 3px; }
-        """)
+        self.total_progress.setObjectName("totalProgress")
         bottom_layout.addWidget(self.total_progress)
 
         self.timer = QTimer(self)
@@ -1071,11 +918,6 @@ class MainWindow(QMainWindow):
         io_layout.setSpacing(10)
 
         tabs = QTabWidget()
-        tabs.setStyleSheet("""
-            QTabWidget::pane { border: 1px solid #555; background-color: #1a1a1a; }
-            QTabBar::tab { background-color: #2d2d2d; color: #cccccc; padding: 8px 16px; }
-            QTabBar::tab:selected { background-color: #1a1a1a; border-bottom: 1px solid #1a1a1a; }
-        """)
 
         single_tab = QWidget()
         single_layout = QVBoxLayout(single_tab)
@@ -1611,7 +1453,6 @@ class MainWindow(QMainWindow):
 
             sep = QFrame()
             sep.setFrameShape(QFrame.Shape.HLine)
-            sep.setStyleSheet("background-color: #555;")
             self.chains_layout_inner.addWidget(sep)
 
     def _add_chain(self):
@@ -1765,17 +1606,17 @@ class MainWindow(QMainWindow):
     def _on_progress(self, message):
         # Color-code console messages
         if "Error" in message or "Traceback" in message or "failed" in message.lower():
-            self.console.setTextColor(QColor("#ff5555"))
+            self.console.setTextColor(QColor("#f7768e"))
         elif "WARNING" in message or "Warning" in message or "FutureWarning" in message:
-            self.console.setTextColor(QColor("#ffaa00"))
+            self.console.setTextColor(QColor("#e0af68"))
         elif "save image to zip" in message or "completed" in message.lower():
-            self.console.setTextColor(QColor("#55ff55"))
+            self.console.setTextColor(QColor("#9ece6a"))
         elif "read image" in message or "Matched Chain" in message:
-            self.console.setTextColor(QColor("#888888"))
+            self.console.setTextColor(QColor("#565f89"))
         elif "Elapsed time" in message:
-            self.console.setTextColor(QColor("#55ff55"))
+            self.console.setTextColor(QColor("#9ece6a"))
         else:
-            self.console.setTextColor(QColor("#888888"))
+            self.console.setTextColor(QColor("#565f89"))
 
         self.console.append(message)
         self.console.verticalScrollBar().setValue(
