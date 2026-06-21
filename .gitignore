@@ -1,0 +1,14 @@
+Input/
+Output/
+__pycache__/
+*.pyc
+.venv/
+backend/src/.venv/
+backend/models/
+*.safetensors
+*.pth
+*.pt
+*.ckpt
+current/appstate2.json
+backend/rocm-wheels/
+.fuse_hidden*

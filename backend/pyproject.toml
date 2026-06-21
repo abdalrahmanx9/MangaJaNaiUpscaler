@@ -1,0 +1,13 @@
+[project]
+name = "mangajanai-converter"
+version = "1.0.0"
+description = "MangaJaNai Converter - Linux Edition"
+requires-python = ">=3.12"
+
+[tool.uv]
+find-links = ["rocm-wheels"]
+
+[tool.uv.sources]
+triton = { path = "rocm-wheels/triton-3.6.0%2Brocm7.2.4.git4ed88892-cp312-cp312-linux_x86_64.whl" }
+torch = { path = "rocm-wheels/torch-2.10.0%2Brocm7.2.4.lw.git3d3aa833-cp312-cp312-linux_x86_64.whl" }
+torchvision = { path = "rocm-wheels/torchvision-0.25.0%2Brocm7.2.4.git82df5f59-cp312-cp312-linux_x86_64.whl" }
