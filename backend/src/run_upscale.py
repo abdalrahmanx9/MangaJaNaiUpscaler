@@ -797,6 +797,7 @@ def preprocess_worker_folder(
                         output_file_path
                     ):
                         print(f"file exists, skip: {output_file_path}", flush=True)
+                        print("PROGRESS=postprocess_worker_folder_image", flush=True)
                         continue
 
                     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
@@ -908,6 +909,7 @@ def preprocess_worker_folder(
                         output_file_path
                     ):
                         print(f"file exists, skip: {output_file_path}", flush=True)
+                        print("PROGRESS=postprocess_worker_zip_archive", flush=True)
                         continue
                     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
@@ -946,6 +948,8 @@ def preprocess_worker_image(
     if input_image_path.lower().endswith(IMAGE_EXTENSIONS):
         if not overwrite_existing_files and os.path.isfile(output_image_path):
             print(f"file exists, skip: {output_image_path}", flush=True)
+            print("PROGRESS=postprocess_worker_image", flush=True)
+            upscale_queue.put(UPSCALE_SENTINEL)
             return
 
         os.makedirs(os.path.dirname(output_image_path), exist_ok=True)
@@ -1372,6 +1376,7 @@ def upscale_file(
         log_info(f"Output: {output_file_path}")
         if not overwrite_existing_files and os.path.isfile(output_file_path):
             print(f"file exists, skip: {output_file_path}", flush=True)
+            print("PROGRESS=postprocess_worker_zip_archive", flush=True)
             return
 
         upscale_archive_file(
@@ -1396,6 +1401,7 @@ def upscale_file(
         )
         if not overwrite_existing_files and os.path.isfile(output_file_path):
             print(f"file exists, skip: {output_file_path}", flush=True)
+            print("PROGRESS=postprocess_worker_image", flush=True)
             return
 
         upscale_image_file(
