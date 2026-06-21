@@ -823,18 +823,18 @@ class MainWindow(QMainWindow):
 
         self.archive_progress = QProgressBar()
         self.archive_progress.setFixedWidth(250)
-        self.archive_progress.setRange(0, 100)
+        self.archive_progress.setRange(0, 1)
         self.archive_progress.setValue(0)
         self.archive_progress.setTextVisible(True)
-        self.archive_progress.setFormat("%v / %m images")
+        self.archive_progress.setFormat("-- / -- images")
         bottom_layout.addWidget(self.archive_progress)
 
         self.total_progress = QProgressBar()
         self.total_progress.setFixedWidth(250)
-        self.total_progress.setRange(0, 100)
+        self.total_progress.setRange(0, 1)
         self.total_progress.setValue(0)
         self.total_progress.setTextVisible(True)
-        self.total_progress.setFormat("%v / %m total")
+        self.total_progress.setFormat("-- / -- total")
         self.total_progress.setObjectName("totalProgress")
         bottom_layout.addWidget(self.total_progress)
 
@@ -1574,8 +1574,12 @@ class MainWindow(QMainWindow):
         self.cancel_btn.setEnabled(True)
         self.start_time = time.time()
         self.timer.start(1000)
+        self.total_progress.setRange(0, 1)
         self.total_progress.setValue(0)
+        self.total_progress.setFormat("-- / -- total")
+        self.archive_progress.setRange(0, 1)
         self.archive_progress.setValue(0)
+        self.archive_progress.setFormat("-- / -- images")
 
         self.worker = UpscaleWorker(venv_python, script_path, settings_path)
         self.worker.progress.connect(self._on_progress)
@@ -1615,8 +1619,10 @@ class MainWindow(QMainWindow):
                 self.processed_files = 0
                 self.archive_progress.setMaximum(total)
                 self.archive_progress.setValue(0)
+                self.archive_progress.setFormat("%v / %m images")
                 self.total_progress.setMaximum(total)
                 self.total_progress.setValue(0)
+                self.total_progress.setFormat("%v / %m total")
             except Exception:
                 pass
 
