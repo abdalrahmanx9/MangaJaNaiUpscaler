@@ -183,19 +183,14 @@ def _max_split(
                             f" below {max_tile_size}. Try a model with lower VRAM usage."
                         )
 
-                    new_tile_count_y = math.ceil(h / max_tile_size[1])
-                    new_tile_size_y = math.ceil(h / new_tile_count_y)
-                    start_y = (y * tile_size_y) // new_tile_size_y
-
                     logger.debug(
                         f"Split occurred. New tile size is {max_tile_size}."
-                        f" Starting at row {start_y}."
+                        f" Restarting from row 0 to prevent geometry mismatch."
                     )
 
-                    # reset result
-                    if result is not None:
-                        # Reset Y offset to the correct output pixel position
-                        result.offset = start_y * new_tile_size_y * scale
+                    # reset result to prevent tile geometry mismatch gaps (black squares)
+                    result = None
+                    start_y = 0
 
                     restart = True
                     break

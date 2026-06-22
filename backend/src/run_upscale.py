@@ -15,8 +15,16 @@ _is_rocm = any(os.path.exists(p) for p in _rocm_paths)
 if _is_rocm:
     os.environ.setdefault("HSA_OVERRIDE_GFX_VERSION", "10.3.0")
     os.environ.setdefault("HIP_VISIBLE_DEVICES", "0")
-    os.environ.setdefault("HSA_ENABLE_SDMA", "0")
-os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+    # Force SDMA off — SDMA causes data corruption on RDNA2 (RX 6000 series).
+    # Use os.environ[] not setdefault() to ensure it can't be overridden.
+    os.environ["HSA_ENABLE_SDMA"] = "0"
+    # Limit hardware queues to prevent multi-queue race conditions on ROCm
+    os.environ.setdefault("GPU_MAX_HW_QUEUES", "1")
+    # CRITICAL: Disable expandable_segments on ROCm! It causes severe VRAM corruption
+    # over time during batch processing on AMD GPUs.
+    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:False"
+else:
+    os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 from collections.abc import Callable
 from io import BytesIO
 from pathlib import Path
@@ -1056,6 +1064,10 @@ def upscale_worker(upscale_queue: Queue, postprocess_queue: Queue) -> None:
     """
     wait for upscale queue, for each queue entry, upscale image and add result to postprocess queue
     """
+    import gc as _gc
+    import torch as _torch
+    _is_rocm = hasattr(_torch.version, 'hip') and _torch.version.hip is not None
+
     while True:
         (
             image,
@@ -1083,10 +1095,37 @@ def upscale_worker(upscale_queue: Queue, postprocess_queue: Queue) -> None:
                 dt = time.time() - t0
                 log_err(f"Failed to upscale {file_name} after {dt:.1f}s: {e}")
                 traceback.print_exc()
-
+                # Pass the original un-upscaled image through instead of skipping
+                # so the output archive is not missing any pages.
+                log_warn(f"Saving original low-res image instead: {file_name}")
+                try:
+                    import cv2 as _cv2
+                    import numpy as _np
+                    image = _np.ascontiguousarray(image).copy()
+                    if image.ndim == 2:
+                        image = _cv2.cvtColor(image, _cv2.COLOR_GRAY2RGB)
+                    elif image.shape[-1] == 1:
+                        image = _cv2.cvtColor(image, _cv2.COLOR_GRAY2RGB)
+                    
+                    h, w = image.shape[:2]
+                    _cv2.rectangle(image, (0, 0), (min(w, 350), min(h, 40)), (1.0, 0.0, 0.0), -1)
+                    _cv2.putText(image, "UNSCALED DUE TO ERROR", (10, 25), _cv2.FONT_HERSHEY_SIMPLEX, 0.7, (1.0, 1.0, 1.0), 2)
+                except Exception as draw_e:
+                    log_warn(f"Failed to draw error text: {draw_e}")
             # convert back to grayscale
             if is_grayscale:
                 image = convert_image_to_grayscale(image)
+
+            # Ensure array is contiguous before sending through multiprocessing
+            # Queue — non-contiguous arrays can corrupt during pickle serialization
+            image = np.ascontiguousarray(image)
+
+            # On ROCm, clear GPU caches between images to prevent VRAM
+            # fragmentation that causes stale data in subsequent allocations
+            if _is_rocm and _torch.cuda.is_available():
+                _torch.cuda.synchronize()
+                _gc.collect()
+                _torch.cuda.empty_cache()
 
         postprocess_queue.put(
             (image, file_name, is_image, is_grayscale, original_width, original_height)

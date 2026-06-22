@@ -88,14 +88,16 @@ def pytorch_auto_split(
     tiler: Tiler,
     progress: Progress,
 ) -> np.ndarray:
+    _is_rocm = hasattr(torch.version, 'hip') and torch.version.hip is not None
+
     dtype = torch.float32
     if use_fp16:
         if model.supports_half:
             dtype = torch.float16
-        elif torch.cuda.is_bf16_supported():
+        elif torch.cuda.is_bf16_supported() and not _is_rocm:
+            # DO NOT use BFloat16 on ROCm. RDNA2/RX6000 lacks hardware support,
+            # and PyTorch's ROCm emulation produces garbage numerical noise.
             dtype = torch.bfloat16
-
-    _is_rocm = hasattr(torch.version, 'hip') and torch.version.hip is not None
 
     if model.dtype != dtype or model.device != device:
         model = model.to(
@@ -113,6 +115,7 @@ def pytorch_auto_split(
             progress.suspend()
 
         input_tensor = None
+        output_tensor = None
         try:
             _, _, input_channels = get_h_w_c(img)
             # convert to tensor
@@ -132,11 +135,29 @@ def pytorch_auto_split(
             with torch.autocast(device_type=autocast_device_type, dtype=dtype, enabled=autocast_enabled):
                 output_tensor = model(input_tensor)
 
+            # Free input tensor immediately — no longer needed
+            del input_tensor
+            input_tensor = None
+
+            # Synchronize GPU before reading back results.
+            # Critical on ROCm/HIP to ensure compute is complete before DMA.
+            if _is_rocm and torch.cuda.is_available():
+                torch.cuda.synchronize()
+
             # convert back to numpy
             output_tensor = _into_standard_image_form(output_tensor)
             if input_channels == 1:
                 output_tensor = output_tensor[:, :, 0].unsqueeze(-1)
-            result = output_tensor.detach().cpu().detach()
+
+            # CRITICAL: .contiguous() before .cpu() — on ROCm/RDNA2, copying a
+            # non-contiguous GPU tensor (from permute()) produces corrupted data
+            # because AMD's tiled VRAM layout isn't properly linearized during
+            # strided DMA transfers. Making it contiguous on-GPU first forces
+            # proper layout conversion.
+            result = output_tensor.detach().contiguous().cpu().detach()
+            del output_tensor
+            output_tensor = None
+
             if result.dtype == torch.bfloat16:
                 result = result.float()
             result = torch.nan_to_num(result, nan=0.0, posinf=1.0, neginf=0.0)
@@ -160,6 +181,12 @@ def pytorch_auto_split(
                     except Exception:
                         pass
                     del input_tensor
+                if output_tensor is not None:
+                    try:
+                        output_tensor.detach().cpu()
+                    except Exception:
+                        pass
+                    del output_tensor
                 gc.collect()
                 safe_accelerator_cache_empty(device)
                 return Split()
@@ -170,3 +197,4 @@ def pytorch_auto_split(
     upscale.tile_count = 0
     upscale.start_time = time.time()
     return auto_split(img, upscale, tiler)
+
