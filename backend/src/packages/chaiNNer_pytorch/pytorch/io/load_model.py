@@ -8,15 +8,15 @@ from nodes.properties.inputs import PthFileInput
 from nodes.properties.outputs import DirectoryOutput, FileNameOutput, ModelOutput
 from nodes.utils.utils import split_file_path
 from sanic.log import logger
-from spandrel import MAIN_REGISTRY, ModelDescriptor, ModelLoader
-#from spandrel_extra_arches import EXTRA_REGISTRY
+from spandrel import ModelDescriptor, ModelLoader
 
+# from spandrel_extra_arches import EXTRA_REGISTRY
 from api import NodeContext
 
 from ...settings import get_settings
 from .. import io_group
 
-#MAIN_REGISTRY.add(*EXTRA_REGISTRY)
+# MAIN_REGISTRY.add(*EXTRA_REGISTRY)
 
 
 def parse_ckpt_state_dict(checkpoint: dict):

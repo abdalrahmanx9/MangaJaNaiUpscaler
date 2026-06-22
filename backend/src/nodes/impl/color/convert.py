@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 import numpy as np
 from sanic.log import logger
@@ -35,12 +35,12 @@ T = TypeVar("T")
 
 
 @dataclass(order=True)
-class __ProcessingItem(Generic[T]):  # noqa: N801
+class __ProcessingItem[T]:
     cost: int
     path: list[T] = field(compare=False)
 
 
-def get_shortest_path(
+def get_shortest_path[T](
     start: T,
     is_destination: Callable[[T], bool],
     get_next: Callable[[T], Iterable[tuple[int, T]]],

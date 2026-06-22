@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Generic, Literal, Optional, TypedDict, TypeVar, Union
+from typing import Any, Literal, Optional, TypedDict, TypeVar, Union
 
 import navi
 
@@ -84,7 +84,7 @@ ErrorValue = Union[
 T = TypeVar("T")
 
 
-class BaseInput(Generic[T]):
+class BaseInput[T]:
     def __init__(
         self,
         input_type: navi.ExpressionJson,

@@ -5,13 +5,11 @@ import weakref
 import numpy as np
 import psutil
 import torch
-from accelerator_detection import AcceleratorType
 from nodes.groups import Condition, if_enum_group, if_group
 from nodes.impl.pytorch.auto_split import pytorch_auto_split
 from nodes.impl.pytorch.utils import safe_accelerator_cache_empty
 from nodes.impl.upscale.auto_split_tiles import (
     CUSTOM,
-    GB_AMT,
     NO_TILING,
     TILE_SIZE_256,
     TileSize,
@@ -85,7 +83,9 @@ def upscale(
                         2 if options.use_fp16 else 4,
                     )
                     # 4x ESRGAN on ROCm: cap at 256px to avoid OOM and slow tiles
-                    is_rocm = hasattr(torch.version, 'hip') and torch.version.hip is not None
+                    is_rocm = (
+                        hasattr(torch.version, "hip") and torch.version.hip is not None
+                    )
                     if is_rocm and model.scale >= 4:
                         tile_size = min(tile_size, 256)
 
@@ -97,7 +97,7 @@ def upscale(
                 if options.use_fp16:
                     model_bytes = model_bytes // 2
                 try:
-                    if hasattr(torch.xpu, 'mem_get_info'):
+                    if hasattr(torch.xpu, "mem_get_info"):
                         mem_info = torch.xpu.mem_get_info(device)
                         _free, total = mem_info
                         total = int(total * 0.75)
@@ -121,7 +121,9 @@ def upscale(
                 # Assume 8GB unified memory with 50% available for inference
                 estimated_budget = 4 * 1024**3  # 4GB conservative estimate
                 if options.budget_limit > 0:
-                    estimated_budget = min(options.budget_limit * 1024**3, estimated_budget)
+                    estimated_budget = min(
+                        options.budget_limit * 1024**3, estimated_budget
+                    )
                 budget = int(estimated_budget * 0.8)
                 return MaxTileSize(
                     estimate_tile_size(
@@ -148,7 +150,9 @@ def upscale(
                 # For other device types, use conservative estimation
                 estimated_budget = 2 * 1024**3  # 2GB conservative estimate
                 if options.budget_limit > 0:
-                    estimated_budget = min(options.budget_limit * 1024**3, estimated_budget)
+                    estimated_budget = min(
+                        options.budget_limit * 1024**3, estimated_budget
+                    )
                 budget = int(estimated_budget * 0.8)
                 return MaxTileSize(
                     estimate_tile_size(

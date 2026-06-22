@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Generic, Protocol, TypeVar
+from typing import Any, Protocol, TypeVar
 
 import navi
 
@@ -47,7 +47,7 @@ class IteratorInputInfo:
 M_co = TypeVar("M_co", covariant=True)
 
 
-class AnyConstructor(Protocol, Generic[M_co]):
+class AnyConstructor[M_co](Protocol):
     def __call__(self, *args: Any, **kwargs: Any) -> M_co: ...
 
 

@@ -1,4 +1,4 @@
-from typing import Any, Generic, NewType, TypeVar, Union
+from typing import Any, NewType, TypeVar, Union
 
 from base_types import InputId
 from nodes.base_input import BaseInput
@@ -21,7 +21,7 @@ class GroupInfo:
         self.options: dict[str, Any] = {} if options is None else options
 
 
-class Group(Generic[T]):
+class Group[T]:
     def __init__(self, info: GroupInfo, items: list[T]) -> None:
         self.info: GroupInfo = info
         self.items: list[T] = items

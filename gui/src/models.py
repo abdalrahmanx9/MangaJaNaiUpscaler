@@ -1,6 +1,7 @@
 import json
 from dataclasses import dataclass, field
-from typing import Optional, List
+from typing import List, Optional
+
 from PyQt6.QtCore import QObject, pyqtSignal
 
 

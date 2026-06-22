@@ -73,7 +73,7 @@ def _exact_split(
             raise _SplitEx
         return result
 
-    MAX_ITER = 20  # noqa: N806
+    MAX_ITER = 20
 
     for _ in range(MAX_ITER):
         try:

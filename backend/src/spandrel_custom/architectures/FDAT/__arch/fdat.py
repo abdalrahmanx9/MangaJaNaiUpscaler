@@ -8,13 +8,12 @@ import numpy as np
 import torch
 import torch.nn.functional as F  # noqa: N812
 from einops import rearrange
-from torch import Tensor, nn
-from torch.nn.init import trunc_normal_
-from torch.nn.modules.module import _IncompatibleKeys  # type: ignore
-
 from spandrel.__helpers.model_descriptor import StateDict
 from spandrel.util import store_hyperparameters
 from spandrel.util.timm import DropPath
+from torch import Tensor, nn
+from torch.nn.init import trunc_normal_
+from torch.nn.modules.module import _IncompatibleKeys  # type: ignore
 
 SampleMods = Literal[
     "conv",
@@ -698,7 +697,7 @@ class FDAT(nn.Module):
     def load_state_dict(
         self,
         state_dict: StateDict,
-        *args,  # noqa: ANN002
+        *args,
         **kwargs,
     ) -> _IncompatibleKeys:
         state_dict["upsampler.MetaUpsample"] = self.upsampler.MetaUpsample

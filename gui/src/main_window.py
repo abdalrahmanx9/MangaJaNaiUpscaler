@@ -1,51 +1,38 @@
-import os
-import sys
 import json
-import subprocess
-import time
-import shutil
-import signal
+import os
 import select
-from typing import Optional, List
-from datetime import datetime, timedelta
+import subprocess
+import sys
+import time
+from datetime import timedelta
 
+from PyQt6.QtCore import Qt, QThread, QTimer, pyqtSignal
+from PyQt6.QtGui import QColor, QDragEnterEvent, QDropEvent, QFont
 from PyQt6.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QSplitter,
-    QLabel,
-    QLineEdit,
-    QPushButton,
-    QFileDialog,
     QCheckBox,
     QComboBox,
-    QSpinBox,
     QDoubleSpinBox,
-    QProgressBar,
-    QMessageBox,
-    QScrollArea,
+    QFileDialog,
     QFrame,
-    QTextEdit,
-    QFormLayout,
-    QRadioButton,
+    QHBoxLayout,
     QInputDialog,
-    QSizePolicy,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QScrollArea,
     QSlider,
+    QSpinBox,
+    QSplitter,
     QTabWidget,
-    QToolButton,
-    QGroupBox,
-    QCompleter,
-    QDockWidget,
-    QStackedWidget,
-    QApplication,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
 )
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QMimeData, QSize, QTimer
-from PyQt6.QtGui import QFont, QColor, QDragEnterEvent, QDropEvent
-
-from src.models import AppSettings, UpscaleWorkflow, UpscaleChain, ReaderDevice
-from src.gpu_detection import get_gpu_info, get_available_models
+from src.gpu_detection import get_available_models, get_gpu_info
+from src.models import AppSettings, ReaderDevice, UpscaleChain, UpscaleWorkflow
 
 COMMON_RESOLUTIONS = [
     "0x0",
@@ -162,7 +149,9 @@ class UpscaleWorker(QThread):
             )
             # Use non-blocking reads so we can check _stop_requested
             fd = self.process.stdout.fileno()
-            import fcntl, os
+            import fcntl
+            import os
+
             fl = fcntl.fcntl(fd, fcntl.F_GETFL)
             fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
@@ -228,7 +217,9 @@ class UpscaleWorker(QThread):
 
     def _reset_gpu(self):
         self.progress.emit("GPU VRAM may still be in use (ROCm limitation) — ")
-        self.progress.emit("stuck VRAM clears on reboot, or run: sudo rocm-smi --gpureset --gpu 0")
+        self.progress.emit(
+            "stuck VRAM clears on reboot, or run: sudo rocm-smi --gpureset --gpu 0"
+        )
         self.progress.emit("Warning: gpureset may freeze your desktop")
 
 
@@ -848,37 +839,57 @@ class MainWindow(QMainWindow):
             elapsed = time.time() - self.start_time
             self.elapsed_label.setText(f"Elapsed: {timedelta(seconds=int(elapsed))}")
 
-            file_elapsed = elapsed
-            if hasattr(self, 'current_file_start_time') and self.current_file_start_time:
-                file_elapsed = time.time() - self.current_file_start_time
+            if (
+                hasattr(self, "current_file_start_time")
+                and self.current_file_start_time
+            ):
+                time.time() - self.current_file_start_time
 
             time_on_current_image = 0
-            if hasattr(self, 'last_image_time'):
+            if hasattr(self, "last_image_time"):
                 time_on_current_image = time.time() - self.last_image_time
-            
-            smooth_image_addition = 0
-            if hasattr(self, 'avg_image_time') and self.avg_image_time > 0:
-                smooth_image_addition = min(1.0, time_on_current_image / self.avg_image_time)
 
-            if hasattr(self, 'processed_files') and self.total_files > 0 and hasattr(self, 'avg_image_time'):
+            smooth_image_addition = 0
+            if hasattr(self, "avg_image_time") and self.avg_image_time > 0:
+                smooth_image_addition = min(
+                    1.0, time_on_current_image / self.avg_image_time
+                )
+
+            if (
+                hasattr(self, "processed_files")
+                and self.total_files > 0
+                and hasattr(self, "avg_image_time")
+            ):
                 unstarted_images = max(0, self.total_files - self.processed_files - 1)
-                file_remaining = (unstarted_images * self.avg_image_time) + max(0, self.avg_image_time - time_on_current_image)
+                file_remaining = (unstarted_images * self.avg_image_time) + max(
+                    0, self.avg_image_time - time_on_current_image
+                )
                 if file_remaining > 0:
-                    self.etr_label.setText(f"Estimated for file: {timedelta(seconds=int(file_remaining))}")
-            
-            if hasattr(self, 'batch_total_files') and self.batch_total_files > 0:
-                batch_completed = getattr(self, 'batch_processed_files', 0)
+                    self.etr_label.setText(
+                        f"Estimated for file: {timedelta(seconds=int(file_remaining))}"
+                    )
+
+            if hasattr(self, "batch_total_files") and self.batch_total_files > 0:
+                batch_completed = getattr(self, "batch_processed_files", 0)
                 current_file_progress = 0
-                if hasattr(self, 'total_files') and self.total_files > 0 and hasattr(self, 'processed_files'):
+                if (
+                    hasattr(self, "total_files")
+                    and self.total_files > 0
+                    and hasattr(self, "processed_files")
+                ):
                     processed_smooth = self.processed_files + smooth_image_addition
                     current_file_progress = processed_smooth / self.total_files
-                
+
                 effective_batch_completed = batch_completed + current_file_progress
                 if effective_batch_completed > 0:
                     batch_rate = effective_batch_completed / elapsed
-                    batch_remaining = (self.batch_total_files - effective_batch_completed) / batch_rate
+                    batch_remaining = (
+                        self.batch_total_files - effective_batch_completed
+                    ) / batch_rate
                     if batch_remaining > 0:
-                        self.eta_label.setText(f"Estimated for all files: {timedelta(seconds=int(batch_remaining))}")
+                        self.eta_label.setText(
+                            f"Estimated for all files: {timedelta(seconds=int(batch_remaining))}"
+                        )
 
     def _setup_workflow_header(self, layout):
         header = QHBoxLayout()
@@ -1624,7 +1635,11 @@ class MainWindow(QMainWindow):
             self.console.setTextColor(QColor("#f7768e"))
         elif "WARNING" in message or "Warning" in message or "FutureWarning" in message:
             self.console.setTextColor(QColor("#e0af68"))
-        elif "save image to zip" in message or "completed" in message.lower() or "[OK]" in message:
+        elif (
+            "save image to zip" in message
+            or "completed" in message.lower()
+            or "[OK]" in message
+        ):
             self.console.setTextColor(QColor("#9ece6a"))
         elif "read image" in message or "Matched Chain" in message:
             self.console.setTextColor(QColor("#565f89"))
@@ -1665,20 +1680,24 @@ class MainWindow(QMainWindow):
 
         if "save image to zip:" in message or "save image:" in message:
             now = time.time()
-            if hasattr(self, 'last_image_time'):
+            if hasattr(self, "last_image_time"):
                 duration = now - self.last_image_time
-                if not hasattr(self, 'avg_image_time'):
+                if not hasattr(self, "avg_image_time"):
                     self.avg_image_time = duration
                 else:
                     self.avg_image_time = 0.8 * self.avg_image_time + 0.2 * duration
             self.last_image_time = now
 
-            if hasattr(self, 'processed_files'):
+            if hasattr(self, "processed_files"):
                 self.processed_files += 1
             self.archive_progress.setValue(self.archive_progress.value() + 1)
-            
-        if "PROGRESS=postprocess_worker_zip_archive" in message or "PROGRESS=postprocess_worker_folder_image" in message or "PROGRESS=postprocess_worker_image" in message:
-            if hasattr(self, 'batch_processed_files'):
+
+        if (
+            "PROGRESS=postprocess_worker_zip_archive" in message
+            or "PROGRESS=postprocess_worker_folder_image" in message
+            or "PROGRESS=postprocess_worker_image" in message
+        ):
+            if hasattr(self, "batch_processed_files"):
                 self.batch_processed_files += 1
                 self.total_progress.setValue(self.total_progress.value() + 1)
 

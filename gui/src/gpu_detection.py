@@ -1,6 +1,6 @@
-import subprocess
 import os
-from typing import Optional, List, Tuple
+import subprocess
+from typing import List, Optional, Tuple
 
 
 class GPUInfo:
@@ -40,7 +40,7 @@ def get_gpu_info() -> GPUInfo:
 
                 if "Max Clock" in line:
                     try:
-                        freq = int(line.split("(")[1].split("MHz")[0])
+                        int(line.split("(")[1].split("MHz")[0])
                     except:
                         pass
 
@@ -52,7 +52,7 @@ def get_gpu_info() -> GPUInfo:
                     except:
                         pass
 
-    except (FileNotFoundError, subprocess.TimeoutExpired, Exception) as e:
+    except (FileNotFoundError, subprocess.TimeoutExpired, Exception):
         pass
 
     try:

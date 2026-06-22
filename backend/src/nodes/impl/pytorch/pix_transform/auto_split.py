@@ -56,12 +56,12 @@ def pix_transform_auto_split(
     s_w, s_h, _ = get_h_w_c(source)
     g_w, g_h, _ = get_h_w_c(guide)
 
-    assert (
-        g_h > s_h and g_w > s_w
-    ), "The guide image mus be larger than the source image."
-    assert (
-        g_w / s_w == g_w // s_w and g_w / s_w == g_h / s_h
-    ), "The size of the guide image must be an integer multiple of the size of the source image (e.g. 2x, 3x, 4x, ...)."
+    assert g_h > s_h and g_w > s_w, (
+        "The guide image mus be larger than the source image."
+    )
+    assert g_w / s_w == g_w // s_w and g_w / s_w == g_h / s_h, (
+        "The size of the guide image must be an integer multiple of the size of the source image (e.g. 2x, 3x, 4x, ...)."
+    )
 
     tiler = _PixTiler()
     scale = g_w // s_w
@@ -80,7 +80,11 @@ def pix_transform_auto_split(
             return grayscale_split(tile, pass_op, split_mode)
         except RuntimeError as e:
             # Check to see if its actually an out of memory error
-            if "allocate" in str(e) or "CUDA" in str(e) or "out of memory" in str(e).lower():
+            if (
+                "allocate" in str(e)
+                or "CUDA" in str(e)
+                or "out of memory" in str(e).lower()
+            ):
                 # Collect garbage (clear memory)
                 gc.collect()
                 safe_accelerator_cache_empty(device)

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, Generic, Literal, TypeVar
+from typing import Any, Literal, TypeVar
 
 import navi
 
@@ -13,7 +13,7 @@ BroadcastData = Mapping[str, object]
 T = TypeVar("T")
 
 
-class BaseOutput(Generic[T]):
+class BaseOutput[T]:
     def __init__(
         self,
         output_type: navi.ExpressionJson,

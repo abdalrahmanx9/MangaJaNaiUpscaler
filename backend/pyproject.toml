@@ -3,7 +3,12 @@ name = "mangajanai-converter"
 version = "1.0.0"
 description = "MangaJaNai Converter - Linux Edition"
 requires-python = ">=3.12"
+dependencies = [
+    "ruff"
+]
 
+[project.optional-dependencies]
+dev = ["ruff"]
 [tool.uv]
 find-links = ["rocm-wheels"]
 

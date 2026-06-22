@@ -1,4 +1,5 @@
 import torch
+
 print("CUDA Available:", torch.cuda.is_available())
 try:
     print("Device 0:", torch.cuda.get_device_name(0))

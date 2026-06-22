@@ -54,13 +54,13 @@ extend-select = [
     "I",  # isort
     "N",  # pep8-naming
     # "ANN", # flake8-annotations
-    "ANN001",
-    "ANN002",
-    "ANN201",
-    "ANN202",
-    "ANN204",
-    "ANN205",
-    "ANN206",
+    # "ANN001",
+    # "ANN002",
+    # "ANN201",
+    # "ANN202",
+    # "ANN204",
+    # "ANN205",
+    # "ANN206",
     # "ASYNC", # flake8-async
     "PL",  # pylint
     "RUF", # ruff
@@ -98,6 +98,21 @@ ignore = [
     "N999",    # Invalid module name (which triggers for chaiNNer)
     "N818",    # Exception name should end in Error
     "ISC001",  # Implicit string concatenation, conflicts with formatter
+    "N803",    # Argument name should be lowercase (bad for ML)
+    "N806",    # Variable in function should be lowercase (bad for ML)
+    "RUF012",  # Mutable default value for class attribute
+    "PLC0415", # Import should be at the top-level of a file
+    "E402",    # Module level import not at top of file (sys.path manipulation)
+    "ICN001",  # Unconventional import alias
+    "PLW0602", # Using global for variable but no assignment is done
+    "PLW1510", # subprocess.run without explicit check argument
+    "N801",    # Class name should use CapWords convention
+    "RUF059",  # Unpacked variable is never used
+    "N802",    # Function name should be lowercase (bad for Node UI factories)
+    "UP007",   # Use X | Y for type annotations (fails on some types)
+    "UP045",   # Use X | None for type annotations
+    "RUF100",  # Unused noqa directive
+    "PLW1508", # Invalid type for environment variable default
 ]
 
 [tool.ruff.format]

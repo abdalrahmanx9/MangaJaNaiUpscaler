@@ -54,12 +54,12 @@ class SrModelInput(ModelInput):
 
     def enforce(self, value: object):
         if spandrel is not None:
-            assert isinstance(
-                value, spandrel.ImageModelDescriptor
-            ), "Expected a supported single image PyTorch model."
-            assert (
-                value.purpose in self.purpose
-            ), "Expected a Super-Resolution or Restoration model."
+            assert isinstance(value, spandrel.ImageModelDescriptor), (
+                "Expected a supported single image PyTorch model."
+            )
+            assert value.purpose in self.purpose, (
+                "Expected a Super-Resolution or Restoration model."
+            )
         return value
 
 
@@ -78,12 +78,12 @@ class FaceModelInput(ModelInput):
 
     def enforce(self, value: object):
         if spandrel is not None:
-            assert isinstance(
-                value, spandrel.ImageModelDescriptor
-            ), "Expected a supported single image PyTorch model."
-            assert (
-                value.purpose in self.purpose
-            ), "Expected a Face Super-Resolution model."
+            assert isinstance(value, spandrel.ImageModelDescriptor), (
+                "Expected a supported single image PyTorch model."
+            )
+            assert value.purpose in self.purpose, (
+                "Expected a Face Super-Resolution model."
+            )
         return value
 
 
@@ -102,9 +102,9 @@ class InpaintModelInput(ModelInput):
 
     def enforce(self, value: object):
         if spandrel is not None:
-            assert isinstance(
-                value, spandrel.MaskedImageModelDescriptor
-            ), "Expected a supported masked-image PyTorch model."
+            assert isinstance(value, spandrel.MaskedImageModelDescriptor), (
+                "Expected a supported masked-image PyTorch model."
+            )
             assert value.purpose in self.purpose, "Expected an Inpainting model."
         return value
 

@@ -89,7 +89,7 @@ class NodeOutputCache:
         while True:
             total_bytes = sum([cache.size() for cache in CACHE_REGISTRY])
             logger.debug(
-                f"Cache size: {total_bytes} ({100*total_bytes/CACHE_MAX_BYTES:0.1f}% of limit)"
+                f"Cache size: {total_bytes} ({100 * total_bytes / CACHE_MAX_BYTES:0.1f}% of limit)"
             )
             if total_bytes <= CACHE_MAX_BYTES:
                 return

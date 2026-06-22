@@ -27,14 +27,20 @@ general = "PyTorch uses .pth models to upscale images."
 
 if is_arm_mac:
     os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
-    package_description = f"{general} Optimized for Apple Silicon with MPS acceleration."
+    package_description = (
+        f"{general} Optimized for Apple Silicon with MPS acceleration."
+    )
     inst_hint = f"{general} It is the most widely-used upscaling architecture and supports Apple Silicon acceleration."
 elif accelerator_names:
     accelerator_list = ", ".join(accelerator_names)
-    package_description = f"{general} Supports hardware acceleration with: {accelerator_list}."
+    package_description = (
+        f"{general} Supports hardware acceleration with: {accelerator_list}."
+    )
     inst_hint = f"{general} It is the most widely-used upscaling architecture and supports multiple accelerators including {accelerator_list}."
 else:
-    package_description = f"{general} Running on CPU (no hardware accelerators detected)."
+    package_description = (
+        f"{general} Running on CPU (no hardware accelerators detected)."
+    )
     inst_hint = f"{general} It is the most widely-used upscaling architecture. No hardware accelerators were detected, so it will run on CPU (which is slow)."
 
 

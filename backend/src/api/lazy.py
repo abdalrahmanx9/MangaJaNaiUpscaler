@@ -3,12 +3,12 @@ from __future__ import annotations
 import time
 from asyncio import AbstractEventLoop
 from collections.abc import Callable, Coroutine
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 
 
-class _Result(Generic[T]):
+class _Result[T]:
     """Either an okay value of T or an error value."""
 
     def __init__(self, value: T | None, error: Exception | None) -> None:
@@ -35,7 +35,7 @@ class _Result(Generic[T]):
         return _Result(None, error)
 
 
-def _to_result(fn: Callable[[], T]) -> Callable[[], _Result[T]]:
+def _to_result[T](fn: Callable[[], T]) -> Callable[[], _Result[T]]:
     def wrapper() -> _Result[T]:
         try:
             return _Result.ok(fn())
@@ -45,7 +45,7 @@ def _to_result(fn: Callable[[], T]) -> Callable[[], _Result[T]]:
     return wrapper
 
 
-class Lazy(Generic[T]):
+class Lazy[T]:
     def __init__(self, factory: Callable[[], T]) -> None:
         self._factory = _to_result(factory)
         self._value: _Result[T] | None = None
@@ -55,7 +55,7 @@ class Lazy(Generic[T]):
     @staticmethod
     def ready(value: T) -> Lazy[T]:
         lazy = Lazy(lambda: value)
-        lazy._value = _Result.ok(value)  # noqa: SLF001
+        lazy._value = _Result.ok(value)
         return lazy
 
     @staticmethod

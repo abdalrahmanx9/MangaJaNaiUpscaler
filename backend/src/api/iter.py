@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 I = TypeVar("I")
 L = TypeVar("L")
 
 
 @dataclass
-class Generator(Generic[I]):
+class Generator[I]:
     supplier: Callable[[], Iterable[I | Exception]]
     expected_length: int
     fail_fast: bool = True
@@ -68,6 +68,6 @@ R = TypeVar("R")
 
 
 @dataclass
-class Collector(Generic[N, R]):
+class Collector[N, R]:
     on_iterate: Callable[[N], None]
     on_complete: Callable[[], R]

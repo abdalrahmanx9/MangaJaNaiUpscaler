@@ -12,6 +12,7 @@ CUSTOM_REGISTRY.add(
     ArchSupport.from_architecture(FDAT.FDATArch()),
 )
 
+
 def install(*, ignore_duplicates: bool = False) -> list[ArchSupport]:
     """
     Try to install the extra architectures into the main registry.

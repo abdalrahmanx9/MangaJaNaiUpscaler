@@ -27,4 +27,8 @@ for device in all_devices:
 
     device_list.append(device_info)
 
-print(json.dumps({"all_devices": device_list, "best_device": all_devices.index(best_device)}))
+print(
+    json.dumps(
+        {"all_devices": device_list, "best_device": all_devices.index(best_device)}
+    )
+)

@@ -7,7 +7,7 @@ T = TypeVar("T")
 Conj = Literal["and", "or"]
 
 
-def join_english(
+def join_english[T](
     items: Iterable[T],
     to_str: Callable[[T], str] = str,
     conj: Conj = "and",

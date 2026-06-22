@@ -2,15 +2,15 @@
 Comprehensive accelerator detection for PyTorch backend.
 Supports all available PyTorch accelerators in PyTorch 2.7+
 """
+
 from __future__ import annotations
 
 import subprocess
 import sys
-import warnings
 from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
-from typing import Any, Optional, Sequence, override
+from typing import Any, override
 
 import torch
 from sanic.log import logger
@@ -18,21 +18,23 @@ from sanic.log import logger
 
 class AcceleratorType(Enum):
     """Supported accelerator types"""
+
     CPU = "cpu"
     CUDA = "cuda"
     ROCM = "rocm"  # AMD GPUs using ROCm
-    MPS = "mps"    # Apple Metal Performance Shaders
-    XPU = "xpu"    # Intel GPUs
+    MPS = "mps"  # Apple Metal Performance Shaders
+    XPU = "xpu"  # Intel GPUs
 
 
 @dataclass(frozen=True)
 class AcceleratorDevice:
     """Information about an accelerator device"""
+
     type: AcceleratorType
     index: int
     name: str
-    memory_total: Optional[int] = None
-    memory_free: Optional[int] = None
+    memory_total: int | None = None
+    memory_free: int | None = None
     supports_fp16: bool = False
     supports_bf16: bool = False
     device_string: str = ""
@@ -42,7 +44,9 @@ class AcceleratorDevice:
             if self.type == AcceleratorType.CPU:
                 object.__setattr__(self, "device_string", "cpu")
             else:
-                object.__setattr__(self, "device_string", f"{self.type.value}:{self.index}")
+                object.__setattr__(
+                    self, "device_string", f"{self.type.value}:{self.index}"
+                )
 
     @property
     def torch_device(self) -> torch.device:
@@ -65,7 +69,7 @@ class AcceleratorDetector:
     """Detects and manages available accelerators"""
 
     def __init__(self):
-        self._devices: Optional[list[AcceleratorDevice]] = None
+        self._devices: list[AcceleratorDevice] | None = None
 
     @cached_property
     def available_devices(self) -> list[AcceleratorDevice]:
@@ -79,17 +83,19 @@ class AcceleratorDetector:
         devices = []
 
         # Always add CPU
-        devices.append(AcceleratorDevice(
-            type=AcceleratorType.CPU,
-            index=0,
-            name="CPU",
-            supports_fp16=False,  # PyTorch 2.7+ doesn't support FP16 on CPU
-            supports_bf16=True,   # CPU supports bfloat16
-        ))
+        devices.append(
+            AcceleratorDevice(
+                type=AcceleratorType.CPU,
+                index=0,
+                name="CPU",
+                supports_fp16=False,  # PyTorch 2.7+ doesn't support FP16 on CPU
+                supports_bf16=True,  # CPU supports bfloat16
+            )
+        )
 
         # Detect ROCm first: if HIP is available, skip CUDA detection
         # to avoid detecting AMD GPUs as both CUDA and ROCm
-        if hasattr(torch.version, 'hip') and torch.version.hip is not None:
+        if hasattr(torch.version, "hip") and torch.version.hip is not None:
             devices.extend(self._detect_rocm_devices())
         else:
             # Detect CUDA devices (NVIDIA only)
@@ -112,26 +118,28 @@ class AcceleratorDetector:
                     try:
                         device_props = torch.cuda.get_device_properties(i)
                         memory_info = torch.cuda.mem_get_info(i)
-                        
+
                         # Determine FP16 support based on architecture
                         supports_fp16 = self._cuda_supports_fp16(device_props, i)
                         supports_bf16 = self._cuda_supports_bf16(device_props)
 
-                        devices.append(AcceleratorDevice(
-                            type=AcceleratorType.CUDA,
-                            index=i,
-                            name=device_props.name,
-                            memory_total=device_props.total_memory,
-                            memory_free=memory_info[0],
-                            supports_fp16=supports_fp16,
-                            supports_bf16=supports_bf16,
-                        ))
+                        devices.append(
+                            AcceleratorDevice(
+                                type=AcceleratorType.CUDA,
+                                index=i,
+                                name=device_props.name,
+                                memory_total=device_props.total_memory,
+                                memory_free=memory_info[0],
+                                supports_fp16=supports_fp16,
+                                supports_bf16=supports_bf16,
+                            )
+                        )
                         logger.info(f"Detected CUDA device {i}: {device_props.name}")
                     except Exception as e:
                         logger.warning(f"Failed to get info for CUDA device {i}: {e}")
         except Exception as e:
             logger.info(f"CUDA not available: {e}")
-        
+
         return devices
 
     def _detect_rocm_devices(self) -> list[AcceleratorDevice]:
@@ -140,7 +148,7 @@ class AcceleratorDetector:
         try:
             # ROCm devices appear as CUDA devices due to HIP/CUDA compatibility
             # Check if we're actually running on ROCm
-            if hasattr(torch.version, 'hip') and torch.version.hip is not None:
+            if hasattr(torch.version, "hip") and torch.version.hip is not None:
                 # This is ROCm, re-categorize CUDA devices as ROCm
                 if torch.cuda.is_available():
                     for i in range(torch.cuda.device_count()):
@@ -157,22 +165,28 @@ class AcceleratorDetector:
                                 )
                                 continue
 
-                            devices.append(AcceleratorDevice(
-                                type=AcceleratorType.ROCM,
-                                index=i,
-                                name=device_props.name,
-                                memory_total=device_props.total_memory,
-                                memory_free=memory_info[0],
-                                supports_fp16=True,  # Most modern AMD GPUs support FP16
-                                supports_bf16=True,  # Modern AMD GPUs support bfloat16
-                                device_string=f"cuda:{i}",  # ROCm uses cuda device string
-                            ))
-                            logger.info(f"Detected ROCm device {i}: {device_props.name}")
+                            devices.append(
+                                AcceleratorDevice(
+                                    type=AcceleratorType.ROCM,
+                                    index=i,
+                                    name=device_props.name,
+                                    memory_total=device_props.total_memory,
+                                    memory_free=memory_info[0],
+                                    supports_fp16=True,  # Most modern AMD GPUs support FP16
+                                    supports_bf16=True,  # Modern AMD GPUs support bfloat16
+                                    device_string=f"cuda:{i}",  # ROCm uses cuda device string
+                                )
+                            )
+                            logger.info(
+                                f"Detected ROCm device {i}: {device_props.name}"
+                            )
                         except Exception as e:
-                            logger.warning(f"Failed to get info for ROCm device {i}: {e}")
+                            logger.warning(
+                                f"Failed to get info for ROCm device {i}: {e}"
+                            )
         except Exception as e:
             logger.debug(f"ROCm detection failed: {e}")
-        
+
         return devices
 
     @staticmethod
@@ -185,10 +199,15 @@ class AcceleratorDetector:
         Returns True if the GPU can execute kernel operations successfully.
         """
         try:
-            hsa_override = "os.environ.setdefault('HSA_OVERRIDE_GFX_VERSION', '10.3.0');" if hasattr(torch.version, 'hip') else ""
+            hsa_override = (
+                "os.environ.setdefault('HSA_OVERRIDE_GFX_VERSION', '10.3.0');"
+                if hasattr(torch.version, "hip")
+                else ""
+            )
             result = subprocess.run(
                 [
-                    sys.executable, "-c",
+                    sys.executable,
+                    "-c",
                     (
                         "import os;"
                         f"{hsa_override}"
@@ -209,30 +228,33 @@ class AcceleratorDetector:
         """Detect Apple Metal Performance Shaders devices"""
         devices = []
         try:
-            if (hasattr(torch, 'backends') and 
-                hasattr(torch.backends, 'mps') and 
-                torch.backends.mps.is_built() and 
-                torch.backends.mps.is_available()):
-                
-                devices.append(AcceleratorDevice(
-                    type=AcceleratorType.MPS,
-                    index=0,
-                    name="Apple Metal GPU",
-                    supports_fp16=True,   # MPS supports FP16
-                    supports_bf16=False,  # MPS doesn't support bfloat16 yet
-                    device_string="mps",
-                ))
+            if (
+                hasattr(torch, "backends")
+                and hasattr(torch.backends, "mps")
+                and torch.backends.mps.is_built()
+                and torch.backends.mps.is_available()
+            ):
+                devices.append(
+                    AcceleratorDevice(
+                        type=AcceleratorType.MPS,
+                        index=0,
+                        name="Apple Metal GPU",
+                        supports_fp16=True,  # MPS supports FP16
+                        supports_bf16=False,  # MPS doesn't support bfloat16 yet
+                        device_string="mps",
+                    )
+                )
                 logger.info("Detected Apple MPS device")
         except Exception as e:
             logger.debug(f"MPS detection failed: {e}")
-        
+
         return devices
 
     def _detect_xpu_devices(self) -> list[AcceleratorDevice]:
         """Detect Intel XPU devices"""
         devices = []
         try:
-            if hasattr(torch, 'xpu') and torch.xpu.is_available():
+            if hasattr(torch, "xpu") and torch.xpu.is_available():
                 device_count = torch.xpu.device_count()
                 for i in range(device_count):
                     try:
@@ -244,21 +266,23 @@ class AcceleratorDetector:
                         except Exception:
                             pass
 
-                        devices.append(AcceleratorDevice(
-                            type=AcceleratorType.XPU,
-                            index=i,
-                            name=device_name,
-                            memory_total=memory_info[1] if memory_info else None,
-                            memory_free=memory_info[0] if memory_info else None,
-                            supports_fp16=True,   # Intel XPU supports FP16
-                            supports_bf16=True,   # Intel XPU supports bfloat16
-                        ))
+                        devices.append(
+                            AcceleratorDevice(
+                                type=AcceleratorType.XPU,
+                                index=i,
+                                name=device_name,
+                                memory_total=memory_info[1] if memory_info else None,
+                                memory_free=memory_info[0] if memory_info else None,
+                                supports_fp16=True,  # Intel XPU supports FP16
+                                supports_bf16=True,  # Intel XPU supports bfloat16
+                            )
+                        )
                         logger.info(f"Detected Intel XPU device {i}: {device_name}")
                     except Exception as e:
                         logger.warning(f"Failed to get info for XPU device {i}: {e}")
         except Exception as e:
             logger.debug(f"XPU detection failed: {e}")
-        
+
         return devices
 
     def _cuda_supports_fp16(self, device_props: Any, device_index: int) -> bool:
@@ -267,7 +291,7 @@ class AcceleratorDetector:
             # Check compute capability
             major, minor = device_props.major, device_props.minor
             compute_capability = major * 10 + minor
-            
+
             # FP16 is supported on:
             # - Volta (7.0+) and newer architectures
             # - Some Turing cards (RTX series, not GTX 16xx)
@@ -281,7 +305,9 @@ class AcceleratorDetector:
         except Exception:
             # Fallback: try to actually use FP16
             try:
-                test_tensor = torch.tensor([1.0], dtype=torch.float16, device=f"cuda:{device_index}")
+                torch.tensor(
+                    [1.0], dtype=torch.float16, device=f"cuda:{device_index}"
+                )
                 return True
             except Exception:
                 return False
@@ -296,9 +322,15 @@ class AcceleratorDetector:
         except Exception:
             return False
 
-    def get_devices_by_type(self, accelerator_type: AcceleratorType) -> list[AcceleratorDevice]:
+    def get_devices_by_type(
+        self, accelerator_type: AcceleratorType
+    ) -> list[AcceleratorDevice]:
         """Get all devices of a specific type"""
-        return [device for device in self.available_devices if device.type == accelerator_type]
+        return [
+            device
+            for device in self.available_devices
+            if device.type == accelerator_type
+        ]
 
     def get_best_device(self, prefer_gpu: bool = True) -> AcceleratorDevice:
         """Get the best available device"""
@@ -306,27 +338,37 @@ class AcceleratorDetector:
             return self.get_cpu_device()
 
         # Priority order: CUDA > XPU > MPS > ROCm > CPU
-        for device_type in [AcceleratorType.CUDA, AcceleratorType.XPU, AcceleratorType.MPS, 
-                           AcceleratorType.ROCM]:
+        for device_type in [
+            AcceleratorType.CUDA,
+            AcceleratorType.XPU,
+            AcceleratorType.MPS,
+            AcceleratorType.ROCM,
+        ]:
             devices = self.get_devices_by_type(device_type)
             if devices:
                 # Prefer discrete GPU: look for "RX" followed by digits (e.g., RX 6700, RX 7900)
                 import re
-                discrete = [d for d in devices if re.search(r'RX\s*\d', d.name.upper())]
+
+                discrete = [d for d in devices if re.search(r"RX\s*\d", d.name.upper())]
                 if discrete:
                     return max(discrete, key=lambda d: d.memory_total or 0)
                 # If no discrete, pick the one with more memory
                 return max(devices, key=lambda d: d.memory_total or 0)
 
         return self.get_cpu_device()
+
     def get_cpu_device(self) -> AcceleratorDevice:
         """Get the CPU device"""
         cpu_devices = self.get_devices_by_type(AcceleratorType.CPU)
-        return cpu_devices[0] if cpu_devices else AcceleratorDevice(
-            type=AcceleratorType.CPU, index=0, name="CPU"
+        return (
+            cpu_devices[0]
+            if cpu_devices
+            else AcceleratorDevice(type=AcceleratorType.CPU, index=0, name="CPU")
         )
 
-    def get_device_by_index(self, device_type: AcceleratorType, index: int) -> Optional[AcceleratorDevice]:
+    def get_device_by_index(
+        self, device_type: AcceleratorType, index: int
+    ) -> AcceleratorDevice | None:
         """Get a specific device by type and index"""
         devices = self.get_devices_by_type(device_type)
         for device in devices:
@@ -338,7 +380,7 @@ class AcceleratorDetector:
 def get_autocast_device_type(device: torch.device) -> str:
     """Get the correct device type string for torch.autocast"""
     device_type = device.type
-    
+
     # Map device types to autocast device types
     if device_type in ["cuda", "rocm"]:  # ROCm uses cuda device type
         return "cuda"
@@ -358,7 +400,7 @@ def is_device_type_supported_for_autocast(device: torch.device) -> bool:
 
 
 # Global detector instance
-_detector: Optional[AcceleratorDetector] = None
+_detector: AcceleratorDetector | None = None
 
 
 def get_accelerator_detector() -> AcceleratorDetector:

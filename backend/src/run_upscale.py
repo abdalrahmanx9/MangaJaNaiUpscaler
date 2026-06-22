@@ -10,7 +10,9 @@ import traceback
 from datetime import datetime
 
 # Detect ROCm (harmless on NVIDIA — ROCm env vars are vendor-specific no-ops)
-_rocm_paths = ['/opt/rocm'] + [f'/opt/rocm-{v}' for v in ['7.2.4', '7.1', '7.0', '6.4', '6.3', '6.2', '6.1', '6.0']]
+_rocm_paths = ["/opt/rocm"] + [
+    f"/opt/rocm-{v}" for v in ["7.2.4", "7.1", "7.0", "6.4", "6.3", "6.2", "6.1", "6.0"]
+]
 _is_rocm = any(os.path.exists(p) for p in _rocm_paths)
 if _is_rocm:
     os.environ.setdefault("HSA_OVERRIDE_GFX_VERSION", "10.3.0")
@@ -26,16 +28,17 @@ if _is_rocm:
 else:
     os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 from collections.abc import Callable
-from io import BytesIO
+from multiprocessing import Process
+from multiprocessing import Queue as MPQueue
 from pathlib import Path
 from queue import Queue
-from multiprocessing import Queue as MPQueue, Process
 from threading import Thread
 from typing import Any, Literal
-from zipfile import ZipFile, ZIP_DEFLATED
+from zipfile import ZIP_DEFLATED, ZipFile
 
 # --- Colored console logging ---
 _USE_COLOR = sys.stdout.isatty() and platform.system() != "win32"
+
 
 class Ansi:
     RESET = "\033[0m"
@@ -48,32 +51,40 @@ class Ansi:
     GRAY = "\033[90m"
     BOLD = "\033[1m"
 
+
 def _c(color: str, text: str) -> str:
     return f"{color}{text}{Ansi.RESET}" if _USE_COLOR else str(text)
+
 
 def log_info(msg: str) -> None:
     ts = datetime.now().strftime("%H:%M:%S")
     print(f"{_c(Ansi.GRAY, ts)} {msg}", flush=True)
 
+
 def log_ok(msg: str) -> None:
     ts = datetime.now().strftime("%H:%M:%S")
     print(f"{_c(Ansi.GRAY, ts)} {_c(Ansi.GREEN, '[OK]')} {msg}", flush=True)
+
 
 def log_step(msg: str) -> None:
     ts = datetime.now().strftime("%H:%M:%S")
     print(f"{_c(Ansi.GRAY, ts)} {_c(Ansi.CYAN, '[..]')} {msg}", flush=True)
 
+
 def log_warn(msg: str) -> None:
     ts = datetime.now().strftime("%H:%M:%S")
     print(f"{_c(Ansi.GRAY, ts)} {_c(Ansi.YELLOW, '[WARN]')} {msg}", flush=True)
+
 
 def log_err(msg: str) -> None:
     ts = datetime.now().strftime("%H:%M:%S")
     print(f"{_c(Ansi.GRAY, ts)} {_c(Ansi.RED, '[ERR]')} {msg}", flush=True)
 
+
 def log_debug(msg: str) -> None:
     ts = datetime.now().strftime("%H:%M:%S")
     print(f"{_c(Ansi.GRAY, ts)} {_c(Ansi.MAGENTA, '[DBG]')} {msg}", flush=True)
+
 
 # --- End colored logging ---
 
@@ -84,7 +95,6 @@ import rarfile
 from chainner_ext import ResizeFilter, resize
 from cv2.typing import MatLike
 from PIL import Image, ImageCms, ImageFilter
-from PIL.Image import Image as ImageType
 from PIL.ImageCms import ImageCmsProfile
 from rarfile import RarFile
 from spandrel import ImageModelDescriptor, ModelDescriptor
@@ -92,7 +102,7 @@ from spandrel import ImageModelDescriptor, ModelDescriptor
 sys.path.append(os.path.normpath(os.path.dirname(os.path.abspath(__file__))))
 
 import spandrel_custom
-from nodes.impl.image_utils import normalize, to_uint8, to_uint16
+from nodes.impl.image_utils import normalize, to_uint8
 from nodes.impl.upscale.auto_split_tiles import (
     ESTIMATE,
     MAX_TILE_SIZE,
@@ -299,11 +309,19 @@ def _read_image(img_stream: bytes, filename: str) -> np.ndarray:
 
 
 def _read_image_from_path(path: str) -> np.ndarray:
-    return pyvips.Image.new_from_file(path, access="sequential", fail=True).icc_transform("srgb").numpy()
+    return (
+        pyvips.Image.new_from_file(path, access="sequential", fail=True)
+        .icc_transform("srgb")
+        .numpy()
+    )
 
 
 def _read_vips(img_stream: bytes) -> np.ndarray:
-    return pyvips.Image.new_from_buffer(img_stream, "", access="sequential").icc_transform("srgb").numpy()
+    return (
+        pyvips.Image.new_from_buffer(img_stream, "", access="sequential")
+        .icc_transform("srgb")
+        .numpy()
+    )
 
 
 def cv_image_is_grayscale(image: np.ndarray, user_threshold: float) -> bool:
@@ -379,7 +397,9 @@ def get_chain_for_image(
         if should_chain_activate_for_image(
             original_width, original_height, is_grayscale, target_scale, chain
         ):
-            log_debug(f"Matched Chain: {chain['ChainNumber']} -> {os.path.basename(chain['ModelFilePath'])}")
+            log_debug(
+                f"Matched Chain: {chain['ChainNumber']} -> {os.path.basename(chain['ModelFilePath'])}"
+            )
             return chain, is_grayscale, original_width, original_height
 
     return None, None, original_width, original_height
@@ -527,7 +547,9 @@ def save_image_zip(
     args = {"Q": int(lossy_compression_quality)}
     if image_format in {"webp"}:
         args["lossless"] = use_lossless_compression
-    buf_img = pyvips.Image.new_from_array(image).write_to_buffer(f".{image_format}", **args)
+    buf_img = pyvips.Image.new_from_array(image).write_to_buffer(
+        f".{image_format}", **args
+    )
     output_buffer = io.BytesIO(buf_img)  # type: ignore
 
     upscaled_image_data = output_buffer.getvalue()
@@ -725,7 +747,9 @@ def preprocess_worker_archive_file(
                         t0 = time.time()
                         model, _, _ = load_model_node(context, Path(model_abs_path))
                         loaded_models[model_abs_path] = model
-                        log_debug(f"Loaded model: {os.path.basename(chain['ModelFilePath'])} ({time.time()-t0:.1f}s)")
+                        log_debug(
+                            f"Loaded model: {os.path.basename(chain['ModelFilePath'])} ({time.time() - t0:.1f}s)"
+                        )
 
                     tile_size_str = chain["ModelTileSize"]
                 else:
@@ -745,7 +769,9 @@ def preprocess_worker_archive_file(
                     )
                 )
         except Exception as e:
-            log_warn(f"could not read as image, copying instead: {decoded_filename} ({e})")
+            log_warn(
+                f"could not read as image, copying instead: {decoded_filename} ({e})"
+            )
             upscale_queue.put(
                 (image_data, decoded_filename, False, False, None, None, None, None)
             )
@@ -891,7 +917,9 @@ def preprocess_worker_folder(
                         elif os.path.exists(model_abs_path):
                             model, _, _ = load_model_node(context, Path(model_abs_path))
                             loaded_models[model_abs_path] = model
-                            log_debug(f"Loaded model: {os.path.basename(chain['ModelFilePath'])}")
+                            log_debug(
+                                f"Loaded model: {os.path.basename(chain['ModelFilePath'])}"
+                            )
                         tile_size_str = chain["ModelTileSize"]
                     else:
                         image = normalize(image)
@@ -1037,7 +1065,9 @@ def preprocess_worker_image(
                 elif os.path.exists(model_abs_path):
                     model, _, _ = load_model_node(context, Path(model_abs_path))
                     loaded_models[model_abs_path] = model
-                    log_debug(f"Loaded model: {os.path.basename(chain['ModelFilePath'])}")
+                    log_debug(
+                        f"Loaded model: {os.path.basename(chain['ModelFilePath'])}"
+                    )
                 tile_size_str = chain["ModelTileSize"]
         else:
             print("No chain!!!!!!!")
@@ -1065,8 +1095,10 @@ def upscale_worker(upscale_queue: Queue, postprocess_queue: Queue) -> None:
     wait for upscale queue, for each queue entry, upscale image and add result to postprocess queue
     """
     import gc as _gc
+
     import torch as _torch
-    _is_rocm = hasattr(_torch.version, 'hip') and _torch.version.hip is not None
+
+    _is_rocm = hasattr(_torch.version, "hip") and _torch.version.hip is not None
 
     while True:
         (
@@ -1084,6 +1116,7 @@ def upscale_worker(upscale_queue: Queue, postprocess_queue: Queue) -> None:
 
         if is_image:
             from nodes.utils.utils import get_h_w_c
+
             h, w, _ = get_h_w_c(image)
             t0 = time.time()
             log_step(f"upscaling {file_name} ({w}x{h})...")
@@ -1101,15 +1134,26 @@ def upscale_worker(upscale_queue: Queue, postprocess_queue: Queue) -> None:
                 try:
                     import cv2 as _cv2
                     import numpy as _np
+
                     image = _np.ascontiguousarray(image).copy()
                     if image.ndim == 2:
                         image = _cv2.cvtColor(image, _cv2.COLOR_GRAY2RGB)
                     elif image.shape[-1] == 1:
                         image = _cv2.cvtColor(image, _cv2.COLOR_GRAY2RGB)
-                    
+
                     h, w = image.shape[:2]
-                    _cv2.rectangle(image, (0, 0), (min(w, 350), min(h, 40)), (1.0, 0.0, 0.0), -1)
-                    _cv2.putText(image, "UNSCALED DUE TO ERROR", (10, 25), _cv2.FONT_HERSHEY_SIMPLEX, 0.7, (1.0, 1.0, 1.0), 2)
+                    _cv2.rectangle(
+                        image, (0, 0), (min(w, 350), min(h, 40)), (1.0, 0.0, 0.0), -1
+                    )
+                    _cv2.putText(
+                        image,
+                        "UNSCALED DUE TO ERROR",
+                        (10, 25),
+                        _cv2.FONT_HERSHEY_SIMPLEX,
+                        0.7,
+                        (1.0, 1.0, 1.0),
+                        2,
+                    )
                 except Exception as draw_e:
                     log_warn(f"Failed to draw error text: {draw_e}")
             # convert back to grayscale
@@ -1409,7 +1453,7 @@ def upscale_file(
     if input_file_path.lower().endswith(ARCHIVE_EXTENSIONS):
         output_file_path = str(
             Path(
-                f"{os.path.join(output_folder_path,output_filename.replace('%filename%', input_file_base))}.cbz"
+                f"{os.path.join(output_folder_path, output_filename.replace('%filename%', input_file_base))}.cbz"
             )
         )
         log_info(f"Output: {output_file_path}")
@@ -1435,7 +1479,7 @@ def upscale_file(
     elif input_file_path.lower().endswith(IMAGE_EXTENSIONS):
         output_file_path = str(
             Path(
-                f"{os.path.join(output_folder_path,output_filename.replace('%filename%', input_file_base))}.{image_format}"
+                f"{os.path.join(output_folder_path, output_filename.replace('%filename%', input_file_base))}.{image_format}"
             )
         )
         if not overwrite_existing_files and os.path.isfile(output_file_path):
@@ -1479,7 +1523,7 @@ def upscale_folder(
     # print("upscale_folder: entering")
 
     batch_total_files = 0
-    for root, _dirs, files in os.walk(input_folder_path):
+    for _root, _dirs, files in os.walk(input_folder_path):
         for filename in files:
             if upscale_images and filename.lower().endswith(IMAGE_EXTENSIONS):
                 batch_total_files += 1
@@ -1565,37 +1609,52 @@ def get_dot20_icc_profile() -> ImageCmsProfile:
 
 
 def parse_settings_from_cli():
-    parser = argparse.ArgumentParser(prog="python run_upscale.py",
-                                     description="By default, used by MangaJaNaiConverterGui as an internal tool. "
-                                                 "Alternative options made available to make it easier to skip the GUI "
-                                                 "and run upscaling jobs directly from CLI.")
+    parser = argparse.ArgumentParser(
+        prog="python run_upscale.py",
+        description="By default, used by MangaJaNaiConverterGui as an internal tool. "
+        "Alternative options made available to make it easier to skip the GUI "
+        "and run upscaling jobs directly from CLI.",
+    )
 
     execution_type_group = parser.add_mutually_exclusive_group(required=True)
-    execution_type_group.add_argument("--settings",
-                                      help="Default behaviour, based on provided appstate configuration. "
-                                           "For advanced usage.")
-    execution_type_group.add_argument("-f", "--file-path",
-                                      help="Upscale single file")
-    execution_type_group.add_argument("-d", "--folder-path",
-                                      help="Upscale whole directory")
+    execution_type_group.add_argument(
+        "--settings",
+        help="Default behaviour, based on provided appstate configuration. "
+        "For advanced usage.",
+    )
+    execution_type_group.add_argument("-f", "--file-path", help="Upscale single file")
+    execution_type_group.add_argument(
+        "-d", "--folder-path", help="Upscale whole directory"
+    )
 
-    parser.add_argument("-o", "--output-folder-path",
-                        default=os.path.join(".", "out"),
-                        help="Output directory for upscaled files. Default: ./out")
-    parser.add_argument("-m", "--models-directory-path",
-                        default=os.path.join("..", "models"),
-                        help="Directory with models used for upscaling. "
-                             "Supports only models bundled with MangaJaNaiConvertedGui. "
-                             "Default: MangaJaNaiConverterGui/chaiNNer/models/")
-    parser.add_argument("-u", "--upscale-factor",
-                        type=int,
-                        choices=[1, 2, 3, 4],
-                        default=2,
-                        help="Used for calculating which model will be used. Default: 2")
-    parser.add_argument("--device-index",
-                        type=int,
-                        default=0,
-                        help="Device used to run upscaling jobs in case more than one is available. Default: 0")
+    parser.add_argument(
+        "-o",
+        "--output-folder-path",
+        default=os.path.join(".", "out"),
+        help="Output directory for upscaled files. Default: ./out",
+    )
+    parser.add_argument(
+        "-m",
+        "--models-directory-path",
+        default=os.path.join("..", "models"),
+        help="Directory with models used for upscaling. "
+        "Supports only models bundled with MangaJaNaiConvertedGui. "
+        "Default: MangaJaNaiConverterGui/chaiNNer/models/",
+    )
+    parser.add_argument(
+        "-u",
+        "--upscale-factor",
+        type=int,
+        choices=[1, 2, 3, 4],
+        default=2,
+        help="Used for calculating which model will be used. Default: 2",
+    )
+    parser.add_argument(
+        "--device-index",
+        type=int,
+        default=0,
+        help="Device used to run upscaling jobs in case more than one is available. Default: 0",
+    )
 
     args = parser.parse_args()
 
@@ -1610,14 +1669,18 @@ def parse_auto_settings(args):
 
 
 def parse_manual_settings(args):
-    default_file_path = os.path.join("..", "resources", "default_cli_configuration.json")
-    with open(default_file_path, "r") as default_file:
+    default_file_path = os.path.join(
+        "..", "resources", "default_cli_configuration.json"
+    )
+    with open(default_file_path) as default_file:
         default_json = json.load(default_file)
 
     default_json["SelectedDeviceIndex"] = int(args.device_index)
     default_json["ModelsDirectory"] = args.models_directory_path
 
-    default_json["Workflows"]["$values"][0]["OutputFolderPath"] = args.output_folder_path
+    default_json["Workflows"]["$values"][0]["OutputFolderPath"] = (
+        args.output_folder_path
+    )
     default_json["Workflows"]["$values"][0]["SelectedDeviceIndex"] = args.device_index
     default_json["Workflows"]["$values"][0]["UpscaleScaleFactor"] = args.upscale_factor
     if args.file_path:
@@ -1657,7 +1720,9 @@ settings_parser = SettingsParser(
     }
 )
 
-log_debug(f"accelerator_device_index={settings_parser.get_int('accelerator_device_index', 0)}, use_cpu={settings_parser.get_bool('use_cpu', False)}, use_fp16={settings_parser.get_bool('use_fp16', False)}")
+log_debug(
+    f"accelerator_device_index={settings_parser.get_int('accelerator_device_index', 0)}, use_cpu={settings_parser.get_bool('use_cpu', False)}, use_fp16={settings_parser.get_bool('use_fp16', False)}"
+)
 
 context = _ExecutorNodeContext(ProgressController(), settings_parser, Path())
 
@@ -1677,20 +1742,24 @@ if __name__ == "__main__":
 
     # NVIDIA optimizations (safe on ROCm — these are vendor-specific no-ops)
     import torch
+
     if torch.cuda.is_available() and not _is_rocm:
         torch.backends.cudnn.benchmark = True
         torch.backends.cuda.matmul.allow_tf32 = True
         log_debug("NVIDIA: cudnn.benchmark + TF32 enabled")
 
     # Register GPU VRAM cleanup on cancel/exit
-    import signal
     import atexit
+    import signal
 
     def _cleanup_gpu():
         """Clear model references and free GPU VRAM."""
         global loaded_models
         try:
-            import torch, gc
+            import gc
+
+            import torch
+
             loaded_models.clear()
             gc.collect()
             if torch.cuda.is_available():
@@ -1717,29 +1786,38 @@ if __name__ == "__main__":
 
     # Log accelerator info
     try:
-        from accelerator_detection import get_accelerator_detector, AcceleratorType
+        from accelerator_detection import AcceleratorType, get_accelerator_detector
+
         detector = get_accelerator_detector()
         devices = detector.available_devices
         gpu_list = [d for d in devices if d.type != AcceleratorType.CPU]
         log_info(f"Detected {len(devices)} device(s): {len(gpu_list)} GPU(s), 1 CPU")
         for d in gpu_list:
-            mem_str = f"{d.memory_total/1e9:.1f}GB" if d.memory_total else "N/A"
+            mem_str = f"{d.memory_total / 1e9:.1f}GB" if d.memory_total else "N/A"
             log_debug(f"  {d.name} ({d.type.value}:{d.index}) - {mem_str}")
         # AMD GPU power-level check
         if _is_rocm:
             try:
-                with open("/sys/class/drm/card0/device/power_dpm_force_performance_level") as f:
+                with open(
+                    "/sys/class/drm/card0/device/power_dpm_force_performance_level"
+                ) as f:
                     pwr = f.read().strip()
                 if pwr == "auto":
                     import subprocess as _sp
+
                     for _card in ["card0", "card1"]:
                         _path = f"/sys/class/drm/{_card}/device/power_dpm_force_performance_level"
                         if os.path.exists(_path):
                             _sp.run(
                                 ["sudo", "-n", "tee", _path],
-                                input="high", capture_output=True, text=True, timeout=3,
+                                input="high",
+                                capture_output=True,
+                                text=True,
+                                timeout=3,
                             )
-                    log_warn("GPU perf level is 'auto' — run: sudo rocm-smi --setperflevel high")
+                    log_warn(
+                        "GPU perf level is 'auto' — run: sudo rocm-smi --setperflevel high"
+                    )
             except Exception:
                 pass
     except Exception as e:

@@ -5,7 +5,10 @@ import time
 
 import numpy as np
 import torch
-from accelerator_detection import get_autocast_device_type, is_device_type_supported_for_autocast
+from accelerator_detection import (
+    get_autocast_device_type,
+    is_device_type_supported_for_autocast,
+)
 from nodes.utils.utils import get_h_w_c
 from spandrel import ImageModelDescriptor
 
@@ -67,9 +70,7 @@ def _into_tensor(
                 # Some arrays cannot be made writeable, and we need to copy them
                 img = np.copy(img)
         if device == torch.device("cpu"):
-            input_tensor = (
-                torch.from_numpy(img).to(device, dtype, non_blocking=True)
-            )
+            input_tensor = torch.from_numpy(img).to(device, dtype, non_blocking=True)
         else:
             input_tensor = (
                 torch.from_numpy(img).pin_memory().to(device, dtype, non_blocking=True)
@@ -88,7 +89,7 @@ def pytorch_auto_split(
     tiler: Tiler,
     progress: Progress,
 ) -> np.ndarray:
-    _is_rocm = hasattr(torch.version, 'hip') and torch.version.hip is not None
+    _is_rocm = hasattr(torch.version, "hip") and torch.version.hip is not None
 
     dtype = torch.float32
     if use_fp16:
@@ -103,7 +104,9 @@ def pytorch_auto_split(
         model = model.to(
             device,
             dtype,
-            memory_format=torch.channels_last if not _is_rocm else torch.preserve_format,
+            memory_format=torch.channels_last
+            if not _is_rocm
+            else torch.preserve_format,
         )
 
     def upscale(img: np.ndarray, _: object):
@@ -130,9 +133,13 @@ def pytorch_auto_split(
                 input_tensor = input_tensor.to(memory_format=torch.channels_last)
             # inference with accelerator-aware autocast
             autocast_device_type = get_autocast_device_type(device)
-            autocast_enabled = is_device_type_supported_for_autocast(device) and use_fp16
-            
-            with torch.autocast(device_type=autocast_device_type, dtype=dtype, enabled=autocast_enabled):
+            autocast_enabled = (
+                is_device_type_supported_for_autocast(device) and use_fp16
+            )
+
+            with torch.autocast(
+                device_type=autocast_device_type, dtype=dtype, enabled=autocast_enabled
+            ):
                 output_tensor = model(input_tensor)
 
             # Free input tensor immediately — no longer needed
@@ -166,14 +173,24 @@ def pytorch_auto_split(
             # Emit tile progress
             upscale.tile_count += 1
             if upscale.tile_count % 50 == 0 or upscale.tile_count == 1:
-                elapsed = time.time() - upscale.start_time if hasattr(upscale, 'start_time') else 0
-                print(f"PROGRESS=processed {upscale.tile_count} tiles so far ({elapsed:.0f}s)", flush=True)
+                elapsed = (
+                    time.time() - upscale.start_time
+                    if hasattr(upscale, "start_time")
+                    else 0
+                )
+                print(
+                    f"PROGRESS=processed {upscale.tile_count} tiles so far ({elapsed:.0f}s)",
+                    flush=True,
+                )
 
             return result
         except RuntimeError as e:
             # Check to see if its actually an out of memory error
-            if any(kw in str(e).lower() for kw in ("allocate", "cuda", "hip", "out of memory")):
-                print(f"PROGRESS=OOM, reducing tile size", flush=True)
+            if any(
+                kw in str(e).lower()
+                for kw in ("allocate", "cuda", "hip", "out of memory")
+            ):
+                print("PROGRESS=OOM, reducing tile size", flush=True)
                 # Collect garbage (clear memory)
                 if input_tensor is not None:
                     try:
@@ -197,4 +214,3 @@ def pytorch_auto_split(
     upscale.tile_count = 0
     upscale.start_time = time.time()
     return auto_split(img, upscale, tiler)
-

@@ -26,10 +26,13 @@ if gpu_devices:
                 "Which accelerator device to use for PyTorch. This includes NVIDIA CUDA, "
                 "AMD ROCm, Intel XPU, Apple MPS, and other supported accelerators."
             ),
-            options=[{
-                "label": f"{device.name} ({device.type.value.upper()}:{device.index})", 
-                "value": str(i)
-            } for i, device in enumerate(gpu_devices)],
+            options=[
+                {
+                    "label": f"{device.name} ({device.type.value.upper()}:{device.index})",
+                    "value": str(i),
+                }
+                for i, device in enumerate(gpu_devices)
+            ],
             default="0",
         )
     )
@@ -46,7 +49,10 @@ if not is_arm_mac:
                     "Which CUDA GPU to use for PyTorch. This setting is deprecated - "
                     "use 'Accelerator Device' instead for full accelerator support."
                 ),
-                options=[{"label": device.name, "value": str(device.index)} for device in cuda_devices],
+                options=[
+                    {"label": device.name, "value": str(device.index)}
+                    for device in cuda_devices
+                ],
                 default="0",
             )
         )
@@ -100,7 +106,7 @@ package.add_setting(
 
 # Add cache wipe setting for accelerator types that support it
 has_accelerator_with_cache = any(
-    device.type in [AcceleratorType.CUDA, AcceleratorType.ROCM, AcceleratorType.XPU] 
+    device.type in [AcceleratorType.CUDA, AcceleratorType.ROCM, AcceleratorType.XPU]
     for device in all_devices
 )
 
@@ -134,50 +140,58 @@ class PyTorchSettings:
     def device(self) -> torch.device:
         """Get the appropriate torch device"""
         detector = get_accelerator_detector()
-        
+
         # CPU override
         if self.use_cpu:
             return torch.device("cpu")
-        
+
         # Try to use the new accelerator device index first
-        gpu_devices = [device for device in detector.available_devices if device.type != AcceleratorType.CPU]
-        
+        gpu_devices = [
+            device
+            for device in detector.available_devices
+            if device.type != AcceleratorType.CPU
+        ]
+
         if gpu_devices and 0 <= self.accelerator_device_index < len(gpu_devices):
             selected_device = gpu_devices[self.accelerator_device_index]
             return selected_device.torch_device
-        
+
         # Fallback to legacy CUDA device selection for backward compatibility
         cuda_devices = detector.get_devices_by_type(AcceleratorType.CUDA)
         if cuda_devices and 0 <= self.gpu_index < len(cuda_devices):
             return torch.device(f"cuda:{self.gpu_index}")
-        
+
         # Fallback to best available device
         best_device = detector.get_best_device(prefer_gpu=True)
         if best_device.type != AcceleratorType.CPU:
             return best_device.torch_device
-        
+
         # Final fallback to CPU
         return torch.device("cpu")
 
     @property
-    def accelerator_device(self) -> 'AcceleratorDevice':
+    def accelerator_device(self) -> "AcceleratorDevice":
         """Get the selected accelerator device info"""
         detector = get_accelerator_detector()
-        
+
         if self.use_cpu:
             return detector.get_cpu_device()
-        
+
         # Try to use the new accelerator device index first
-        gpu_devices = [device for device in detector.available_devices if device.type != AcceleratorType.CPU]
-        
+        gpu_devices = [
+            device
+            for device in detector.available_devices
+            if device.type != AcceleratorType.CPU
+        ]
+
         if gpu_devices and 0 <= self.accelerator_device_index < len(gpu_devices):
             return gpu_devices[self.accelerator_device_index]
-        
+
         # Fallback to legacy CUDA device selection
         cuda_devices = detector.get_devices_by_type(AcceleratorType.CUDA)
         if cuda_devices and 0 <= self.gpu_index < len(cuda_devices):
             return cuda_devices[self.gpu_index]
-        
+
         # Fallback to best available device
         return detector.get_best_device(prefer_gpu=True)
 
@@ -189,7 +203,9 @@ def get_settings(context: NodeContext) -> PyTorchSettings:
         use_cpu=settings.get_bool("use_cpu", False),
         use_fp16=settings.get_bool("use_fp16", False),
         gpu_index=settings.get_int("gpu_index", 0, parse_str=True),
-        accelerator_device_index=settings.get_int("accelerator_device_index", 0, parse_str=True),
+        accelerator_device_index=settings.get_int(
+            "accelerator_device_index", 0, parse_str=True
+        ),
         budget_limit=settings.get_int("budget_limit", 0, parse_str=True),
         force_cache_wipe=settings.get_bool("force_cache_wipe", False),
     )

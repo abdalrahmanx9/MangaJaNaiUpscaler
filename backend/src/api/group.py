@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Generic, NewType, TypeVar, Union
+from typing import Any, NewType, TypeVar, Union
 
 from .input import BaseInput
 from .types import InputId
@@ -23,7 +23,7 @@ class GroupInfo:
         self.options: dict[str, Any] = {} if options is None else options
 
 
-class Group(Generic[T]):
+class Group[T]:
     def __init__(self, info: GroupInfo, items: list[T]) -> None:
         self.info: GroupInfo = info
         self.items: list[T] = items

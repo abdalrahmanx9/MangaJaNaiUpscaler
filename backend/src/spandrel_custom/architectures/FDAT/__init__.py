@@ -1,8 +1,12 @@
 import math
 
+from spandrel.__helpers.model_descriptor import (
+    Architecture,
+    ImageModelDescriptor,
+    StateDict,
+)
 from spandrel.util import KeyCondition, get_seq_len
 
-from spandrel.__helpers.model_descriptor import Architecture, ImageModelDescriptor, StateDict
 from .__arch.fdat import FDAT, SampleMods3
 
 
@@ -113,4 +117,4 @@ class FDATArch(Architecture[FDAT]):
         )
 
 
-__all__ = ["FDATArch", "FDAT"]
+__all__ = ["FDAT", "FDATArch"]

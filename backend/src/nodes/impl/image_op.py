@@ -22,7 +22,7 @@ def clipped(op: ImageOp) -> ImageOp:
 P = ParamSpec("P")
 
 
-def to_op(fn: Callable[Concatenate[np.ndarray, P], np.ndarray]) -> Callable[P, ImageOp]:
+def to_op[**P](fn: Callable[Concatenate[np.ndarray, P], np.ndarray]) -> Callable[P, ImageOp]:
     """
     Applies a form of currying to convert the given function into a constructor for an image operation.
 

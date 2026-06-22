@@ -1,12 +1,9 @@
-import sys
 import os
-import json
+import sys
 import traceback
 
+from PyQt6.QtCore import QSettings
 from PyQt6.QtWidgets import QApplication, QMessageBox
-from PyQt6.QtCore import Qt, QSettings
-from PyQt6.QtGui import QIcon
-
 from src.main_window import MainWindow
 
 
@@ -35,7 +32,7 @@ def main():
         with open(qss_path) as f:
             app.setStyleSheet(f.read())
 
-    settings = QSettings()
+    QSettings()
 
     window = MainWindow()
     window.show()
