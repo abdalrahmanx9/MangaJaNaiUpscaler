@@ -8,6 +8,7 @@ const html = fs.readFileSync(path.resolve(__dirname, '../index.html'), 'utf-8');
 // Mock Tauri API before main.ts imports it
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn(async (cmd, args) => {
+    if (cmd === 'check_env_exists') return true;
     if (cmd === 'get_gpu_info') return { name: 'Mock GPU', vram_mb: 8192 };
     if (cmd === 'get_available_models') return ['model1.pth', 'model2.safetensors'];
     if (cmd === 'save_settings') return '/tmp/mock-settings.json';
@@ -95,15 +96,16 @@ describe('Tauri GUI Interaction Tests', () => {
 
     const openModelsBtn = document.querySelector('.chain-open-models-btn') as HTMLButtonElement;
     openModelsBtn.click();
-    // It should invoke openPath from @tauri-apps/plugin-opener
-    const opener = await import('@tauri-apps/plugin-opener');
-    expect(opener.openPath).toHaveBeenCalledWith('models');
+    // It should invoke the backend open_folder command via Tauri
+    const { invoke } = await import('@tauri-apps/api/core');
+    expect(invoke).toHaveBeenCalledWith('open_folder', { path: expect.stringContaining('backend/models') });
   });
 
   it('should trigger upscale process and disable buttons', async () => {
     const upscaleBtn = document.getElementById('upscale-btn') as HTMLButtonElement;
     const cancelBtn = document.getElementById('cancel-btn') as HTMLButtonElement;
     mainModule.appSettings.workflows[mainModule.currentWorkflowIndex].input_file_path = "test.zip";
+    mainModule.appSettings.workflows[mainModule.currentWorkflowIndex].output_folder_path = "/mock/output";
     mainModule.appSettings.workflows[mainModule.currentWorkflowIndex].selected_tab_index = 0;
     upscaleBtn.click();
     await new Promise(r => setTimeout(r, 50));
@@ -111,6 +113,21 @@ describe('Tauri GUI Interaction Tests', () => {
     expect(cancelBtn.disabled).toBe(false);
   });
   
+  it('should toggle between dark and light theme', async () => {
+    const app = document.getElementById('app') as HTMLElement;
+    const toggleBtn = document.getElementById('theme-toggle-btn') as HTMLButtonElement;
+
+    expect(app.getAttribute('data-theme')).toBe('dark');
+
+    toggleBtn.click();
+    await new Promise(r => setTimeout(r, 50));
+    expect(app.getAttribute('data-theme')).toBe('light');
+
+    toggleBtn.click();
+    await new Promise(r => setTimeout(r, 50));
+    expect(app.getAttribute('data-theme')).toBe('dark');
+  });
+
   it('should import a new custom workflow and display it in sidebar', async () => {
     const importBtn = document.getElementById('import-workflow-btn') as HTMLButtonElement;
     const initialWfCount = mainModule.appSettings.workflows.length;

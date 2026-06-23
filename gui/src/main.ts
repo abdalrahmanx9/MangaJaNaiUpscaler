@@ -1,13 +1,30 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { open, confirm, message } from "@tauri-apps/plugin-dialog";
-import { openPath } from "@tauri-apps/plugin-opener";
+import { open, confirm } from "@tauri-apps/plugin-dialog";
 import { AppSettings, UpscaleWorkflow, UpscaleChain } from "./models";
 
 export let appSettings = new AppSettings();
 export let currentWorkflowIndex = 0;
 let availableModels: string[] = [];
 let isUpscaling = false;
+
+// ponytail: simple CSS-attribute theme, no dependency/theme provider needed
+const THEME_KEY = "mangajanai-theme";
+function getSavedTheme(): "dark" | "light" {
+    try {
+        const saved = localStorage.getItem(THEME_KEY);
+        return saved === "light" ? "light" : "dark";
+    } catch {
+        return "dark";
+    }
+}
+function applyTheme(theme: "dark" | "light") {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { localStorage.setItem(THEME_KEY, theme); } catch {}
+    const icon = document.getElementById("theme-toggle-icon");
+    if (icon) icon.textContent = theme === "dark" ? "light_mode" : "dark_mode";
+}
+applyTheme(getSavedTheme());
 
 // DOM Elements: Top Bar
 const upscaleBtn = document.getElementById("upscale-btn") as HTMLButtonElement;
@@ -80,7 +97,6 @@ const saveSettingsBtn = document.getElementById("save-settings-btn")!;
 const settingDevice = document.getElementById("setting-device") as HTMLSelectElement;
 const settingFp16 = document.getElementById("setting-fp16") as HTMLInputElement;
 const settingModelsDir = document.getElementById("setting-models-dir") as HTMLInputElement;
-const browseModelsBtn = document.getElementById("browse-models-btn")!;
 
 let totalArchives = 0;
 let currentTotalArchives = 0;
@@ -181,7 +197,7 @@ async function initSetupWizard() {
     listen<string>("setup-log", (e) => {
         if (e.payload === "SETUP_COMPLETE") {
             statusText.innerText = "Installation Complete!";
-            statusText.style.color = "#2ecc71";
+            statusText.style.color = "var(--success)";
             continueBtn.style.display = "block";
         } else {
             const box = logsBox as HTMLTextAreaElement;
@@ -293,6 +309,7 @@ function renderWorkflow() {
     workflowNameInput.value = wf.workflow_name;
     if (currentWorkflowIndex === 0) {
         document.getElementById("workflow-name-sidebar")!.textContent = wf.workflow_name;
+        document.getElementById("header-workflow-name")!.textContent = wf.workflow_name;
     }
     
     showAdvancedChk.checked = wf.show_advanced_settings;
@@ -553,11 +570,11 @@ function handleProgressMsg(msg: string) {
         }
 
         // Calculate granular progress
-        const archiveProgress = totalArchiveImages > 0 ? (currentArchiveImages / totalArchiveImages) : 0;
-        const totalProgress = totalArchives > 0 ? ((currentTotalArchives + archiveProgress) / totalArchives) : 0;
-        
+        const archiveProgressRatio = totalArchiveImages > 0 ? (currentArchiveImages / totalArchiveImages) : 0;
+        const totalProgress = totalArchives > 0 ? ((currentTotalArchives + archiveProgressRatio) / totalArchives) : 0;
+
         // Update ETA Calculators
-        archiveEtaCalc.update(archiveProgress);
+        archiveEtaCalc.update(archiveProgressRatio);
         totalEtaCalc.update(totalProgress);
 
         // Update Archives Progress UI
@@ -580,7 +597,7 @@ function handleProgressMsg(msg: string) {
         
         // Update Current Archive UI
         if (totalArchiveImages > 0) {
-            const pct = Math.min(100, Math.round(archiveProgress * 100));
+            const pct = Math.min(100, Math.round(archiveProgressRatio * 100));
             archiveProgress.style.width = `${pct}%`;
             archiveProgressText.textContent = `${currentArchiveImages} / ${totalArchiveImages} images in current archive`;
             
@@ -617,6 +634,7 @@ function setupEventListeners() {
         appSettings.workflows[currentWorkflowIndex].workflow_name = val;
         if (currentWorkflowIndex === 0) {
             document.getElementById("workflow-name-sidebar")!.textContent = val;
+            document.getElementById("header-workflow-name")!.textContent = val;
         } else {
             renderSidebarWorkflows();
         }
@@ -793,6 +811,11 @@ function setupEventListeners() {
     document.getElementById("default-workflow-btn")!.addEventListener("click", () => {
         currentWorkflowIndex = 0;
         renderWorkflow();
+    });
+
+    document.getElementById("theme-toggle-btn")!.addEventListener("click", () => {
+        const current = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+        applyTheme(current === "dark" ? "light" : "dark");
     });
 
     // Settings Modal

@@ -15,13 +15,13 @@
   <!-- Setup Wizard Overlay -->
   <div id="setupWizardOverlay" class="modal-overlay" style="z-index: 10000;">
     <div class="modal-content glass" style="width: 600px; display: flex; flex-direction: column; gap: 16px; padding: 24px;">
-      <h2 style="margin: 0; color: #fff; font-size: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">MangaJaNai Setup</h2>
+      <h2 style="margin: 0; color: var(--text); font-size: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">MangaJaNai Setup</h2>
       
       <div id="setupStep1" style="display: flex; flex-direction: column; gap: 16px;">
         <p style="color: var(--text-secondary); margin: 0; font-size: 14px;">Welcome! It looks like this is your first time running MangaJaNai. We need to download and install PyTorch and the AI upscaling backend.</p>
-        
+
         <div class="card" style="padding: 16px; margin-bottom: 0;">
-          <h4 style="margin: 0 0 8px 0; color: var(--text-primary);">Select your Graphics Card (GPU) Type:</h4>
+          <h4 style="margin: 0 0 8px 0; color: var(--text);">Select your Graphics Card (GPU) Type:</h4>
           <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 12px 0;">This ensures we download the correct hardware acceleration libraries (CUDA for NVIDIA, ROCm for AMD).</p>
           <select id="setupGpuSelect" class="dropdown-select" style="width: 100%;">
             <option value="NVIDIA">NVIDIA (RTX / GTX Series)</option>
@@ -36,9 +36,9 @@
       
       <div id="setupStep2" style="display: none; flex-direction: column; gap: 12px;">
         <p style="color: var(--text-secondary); margin: 0; font-size: 14px;">Installing dependencies. This will download ~4GB of data and may take several minutes depending on your internet connection.</p>
-        <textarea id="setupLogsBox" readonly style="background: rgba(0, 0, 0, 0.4); color: #cbd5e1; padding: 12px; border-radius: var(--radius-sm); height: 300px; overflow-y: auto; font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; margin: 0; border: 1px solid var(--border-color); white-space: pre; resize: none; width: 100%; box-sizing: border-box; cursor: text; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);"></textarea>
+        <textarea id="setupLogsBox" readonly style="background: var(--input-bg); color: var(--text-secondary); padding: 12px; border-radius: var(--radius-sm); height: 300px; overflow-y: auto; font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; margin: 0; border: 1px solid var(--border); white-space: pre; resize: none; width: 100%; box-sizing: border-box; cursor: text;"></textarea>
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span id="setupStatusText" style="color: var(--accent-color); font-weight: 600; font-size: 14px;">Installing...</span>
+          <span id="setupStatusText" style="color: var(--accent); font-weight: 600; font-size: 14px;">Installing...</span>
           <button id="setupContinueBtn" class="btn btn-success" style="display: none;">Finish Setup</button>
         </div>
       </div>
@@ -46,12 +46,13 @@
     </div>
   </div>
 
-  <div id="app" class="dark-theme">
+  <div id="app">
     <div class="sidebar">
       <div class="sidebar-header">
         <h2>MangaJaNai</h2>
+        <div class="sidebar-tagline">Manga Upscaler</div>
       </div>
-      
+
       <button id="app-settings-btn" class="nav-btn">
         <span class="material-icons">settings</span>
         App Settings
@@ -77,9 +78,17 @@
     </div>
 
     <div class="main-content">
-
-
-
+      <header class="app-header">
+        <div class="app-header-title">
+          <span class="material-icons" style="color: var(--accent);">auto_stories</span>
+          <span id="header-workflow-name">Upscale Manga (Default)</span>
+        </div>
+        <div class="app-header-actions">
+          <button id="theme-toggle-btn" class="theme-toggle" aria-label="Toggle theme">
+            <span class="material-icons" id="theme-toggle-icon">light_mode</span>
+          </button>
+        </div>
+      </header>
 
       <div class="scroll-area">
         <div class="form-container">
@@ -324,7 +333,7 @@
         </div>
     </div>
 
-    <div id="console-panel" class="console-panel glass" style="margin-bottom: 0; border-radius: 0; border-top: 1px solid var(--border-color); border-bottom: none; border-left: none; border-right: none;">
+    <div id="console-panel" class="console-panel glass" style="margin-bottom: 0; border-radius: 0; border-top: 1px solid var(--border); border-bottom: none; border-left: none; border-right: none;">
       <div class="console-header">
         <h3>Console</h3>
         <button id="close-console-btn" class="btn-icon" aria-label="Close Console"><span class="material-icons">close</span></button>
