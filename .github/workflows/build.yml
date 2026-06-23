@@ -27,10 +27,10 @@ jobs:
         include:
           - os: ubuntu-24.04
             name: linux
-            artifact_name: MangaJaNaiConverter-Linux
+            artifact_name: MangaJaNaiUpscaler-Linux
           - os: windows-latest
             name: windows
-            artifact_name: MangaJaNaiConverter-Windows
+            artifact_name: MangaJaNaiUpscaler-Windows
 
     runs-on: ${{ matrix.os }}
 
@@ -82,7 +82,7 @@ jobs:
         if: matrix.os == 'ubuntu-24.04'
         run: |
           mkdir -p release-pkg
-          cp gui/src-tauri/target/release/gui release-pkg/MangaJaNaiConverter
+          cp gui/src-tauri/target/release/gui release-pkg/MangaJaNaiUpscaler
           cp -r backend release-pkg/backend
 
       - name: Package Release (Windows)
@@ -90,7 +90,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path release-pkg
-          Copy-Item -Path gui\src-tauri\target\release\gui.exe -Destination release-pkg\MangaJaNaiConverter.exe
+          Copy-Item -Path gui\src-tauri\target\release\gui.exe -Destination release-pkg\MangaJaNaiUpscaler.exe
           Copy-Item -Path backend -Destination release-pkg\backend -Recurse
 
       - name: Upload Artifact (Linux)
