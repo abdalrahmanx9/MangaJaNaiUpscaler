@@ -41,11 +41,7 @@ Requires [Node.js](https://nodejs.org/) and [Rust](https://rustup.rs/).
 sudo apt install -y libwebkit2gtk-4.1-dev build-essential file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
 ```
 
-Then run:
-```bash
-bash run.sh    # Linux
-run.bat         # Windows
-```
+Then run `npm run tauri dev` from the `gui/` directory.
 
 ## Project Structure
 
@@ -60,7 +56,6 @@ run.bat         # Windows
 ├── gui/                     # Tauri GUI (TypeScript + Vite)
 │   ├── src/                 # Frontend code
 │   └── src-tauri/           # Rust backend bridging Python script & GUI
-├── run.sh / run.bat         # Dev launch scripts
 └── README.md
 ```
 
