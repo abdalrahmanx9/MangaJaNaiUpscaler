@@ -156,7 +156,7 @@ dependencies = [
     { name = "spandrel-extra-arches" },
     { name = "torch" },
     { name = "torchvision" },
-    { name = "triton" },
+    { name = "triton", marker = "sys_platform == 'linux'" },
 ]
 
 [package.optional-dependencies]
@@ -185,7 +185,7 @@ requires-dist = [
     { name = "spandrel-extra-arches", specifier = ">=0.2.0" },
     { name = "torch", path = "rocm-wheels/torch-2.10.0+rocm7.2.4.lw.git3d3aa833-cp312-cp312-linux_x86_64.whl" },
     { name = "torchvision", path = "rocm-wheels/torchvision-0.25.0+rocm7.2.4.git82df5f59-cp312-cp312-linux_x86_64.whl" },
-    { name = "triton", path = "rocm-wheels/triton-3.6.0+rocm7.2.4.git4ed88892-cp312-cp312-linux_x86_64.whl" },
+    { name = "triton", marker = "sys_platform == 'linux'", path = "rocm-wheels/triton-3.6.0+rocm7.2.4.git4ed88892-cp312-cp312-linux_x86_64.whl" },
 ]
 provides-extras = ["dev"]
 
