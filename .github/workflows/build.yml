@@ -92,7 +92,6 @@ jobs:
           New-Item -ItemType Directory -Force -Path release-pkg
           Copy-Item -Path gui\src-tauri\target\release\gui.exe -Destination release-pkg\MangaJaNaiConverter.exe
           Copy-Item -Path backend -Destination release-pkg\backend -Recurse
-          Compress-Archive -Path release-pkg\* -DestinationPath ${{ matrix.artifact_name }}.zip
 
       - name: Upload Artifact (Linux)
         if: matrix.os == 'ubuntu-24.04'
@@ -108,5 +107,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.artifact_name }}.zip
+          path: release-pkg/*
           if-no-files-found: error
