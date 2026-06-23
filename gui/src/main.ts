@@ -48,7 +48,6 @@ const archiveEtrText = document.getElementById("archive-etr")!;
 
 // Form Controls
 const workflowNameInput = document.getElementById("workflow-name-input") as HTMLInputElement;
-const addWorkflowBtn = document.getElementById("add-workflow-btn") as HTMLButtonElement;
 const importWorkflowBtn = document.getElementById("import-workflow-btn") as HTMLButtonElement;
 const exportWorkflowBtn = document.getElementById("export-workflow-btn")!;
 const resetWorkflowBtn = document.getElementById("reset-workflow-btn")!;
@@ -248,6 +247,17 @@ export async function init() {
         await loadModels();
         renderWorkflow();
         
+        listen("tauri://drag-drop", (event: any) => {
+            const payload = event.payload as any;
+            const paths = payload?.paths;
+            if (paths && paths.length > 0) {
+                const wf = appSettings.workflows[currentWorkflowIndex];
+                if (wf.selected_tab_index === 0) wf.input_file_path = paths[0];
+                else wf.input_folder_path = paths[0];
+                renderWorkflow();
+            }
+        });
+        
         listen("upscale_progress", (event: any) => {
             const msg = event.payload as string;
             handleProgressMsg(msg);
@@ -403,7 +413,22 @@ function renderWorkflow() {
     // Chains
     renderChains(wf);
     renderSidebarWorkflows();
+    
+    // Smart Validation
+    const errors = [];
+    if (wf.selected_tab_index === 0 && !wf.input_file_path) errors.push("Input File is required.");
+    if (wf.selected_tab_index === 1 && !wf.input_folder_path) errors.push("Input Folder is required.");
+    if (!wf.output_folder_path) errors.push("Output Folder is required.");
+    
+    upscaleBtn.disabled = errors.length > 0 || isUpscaling;
+    
     scheduleSave();
+    
+    // Convert native titles to custom tooltips
+    document.querySelectorAll('.info-icon[title]').forEach(el => {
+        el.setAttribute('data-tooltip', el.getAttribute('title')!);
+        el.removeAttribute('title');
+    });
 }
 
 function renderSidebarWorkflows() {
@@ -455,53 +480,45 @@ function renderChains(wf: UpscaleWorkflow) {
             <div class="chain-body">
                 <div class="chain-sub-section">Activation Condition</div>
                 <div class="input-row align-center">
-                    <label>Resolution Range (px)</label>
+                    <label>Resolution Range (px) <span class="material-icons info-icon" data-tooltip="Range of image resolutions to activate this chain. Select a common resolution from the drop down or type a custom resolution. A dimension value of 0 means any value for that dimension.">help_outline</span></label>
                     <div class="number-input-group"><input type="text" class="chain-min-res" list="common-resolutions" value="${chain.min_resolution}" style="width:100px;"><span>px</span></div>
                     <span style="padding:0 10px;"> - </span>
                     <div class="number-input-group"><input type="text" class="chain-max-res" list="common-resolutions" value="${chain.max_resolution}" style="width:100px;"><span>px</span></div>
                 </div>
-                <p class="help-text mt-10">Range of image resolutions to activate this chain. Select a common resolution from the drop down or type a custom resolution. Larger resolutions require more processing power to upscale. A dimension value of 0 means any value for that dimension, for example 0x1250 means any width, and 1250px tall. A maximum resolution of 0x0 means no resolution limit.</p>
                 <div class="input-row align-center mt-10">
-                    <label>Scaling Factor Range (x)</label>
+                    <label>Scaling Factor Range (x) <span class="material-icons info-icon" data-tooltip="Range of necessary scaling factor to activate this chain. A maximum scaling factor of 0 means no maximum limit.">help_outline</span></label>
                     <div class="number-input-group"><input type="number" class="chain-min-scale" value="${chain.min_scale_factor}" min="0" style="width:100px;"><span>x</span></div>
                     <span style="padding:0 10px;"> - </span>
                     <div class="number-input-group"><input type="number" class="chain-max-scale" value="${chain.max_scale_factor}" min="0" style="width:100px;"><span>x</span></div>
                 </div>
-                <p class="help-text mt-10">Range of necessary scaling factor to activate this chain. A maximum scaling factor of 0 means no maximum limit.</p>
                 <div class="checkbox-group mt-10" style="margin-left:0; margin-bottom:10px;">
                     <label class="checkbox-label"><input type="checkbox" class="chain-color" ${chain.is_color ? "checked" : ""}> Is Color Image</label>
-                    <label class="checkbox-label"><input type="checkbox" class="chain-gray" ${chain.is_grayscale ? "checked" : ""}> Is Grayscale Image</label>
+                    <label class="checkbox-label"><input type="checkbox" class="chain-gray" ${chain.is_grayscale ? "checked" : ""}> Is Grayscale Image <span class="material-icons info-icon" data-tooltip="Whether the image is color and/or grayscale. Images with faint color due to artifacts are still considered grayscale.">help_outline</span></label>
                 </div>
-                <p class="help-text">Whether the image is color and/or grayscale. Images that appear grayscale but have faint color due to JPEG artifacts are still considered grayscale.</p>
                 
                 <div class="chain-sub-section mt-20">Upscale Settings</div>
                 <div class="checkbox-group mt-10" style="margin-left:0; margin-bottom:10px;">
-                    <label class="checkbox-label"><input type="checkbox" class="chain-auto-levels" ${chain.auto_adjust_levels ? "checked" : ""}> Auto Adjust Levels on Grayscale</label>
+                    <label class="checkbox-label"><input type="checkbox" class="chain-auto-levels" ${chain.auto_adjust_levels ? "checked" : ""}> Auto Adjust Levels on Grayscale <span class="material-icons info-icon" data-tooltip="Automatically increase the contrast of all grayscale images if necessary. Recommended for faded images.">help_outline</span></label>
                 </div>
-                <p class="help-text">If checked, automatically increase the contrast of all grayscale images if necessary. For best results with the MangaJaNai grayscale model, this setting is recommend when upscaling images which appear to be faded. This will have no effect on color images or grayscale images with sufficient contrast.</p>
                 <div class="input-row align-center mt-10">
-                    <label style="min-width:140px;">Resize Height Before Upscale</label>
+                    <label style="min-width:140px;">Resize Height Before Upscale <span class="material-icons info-icon" data-tooltip="Resize each image to this height before upscaling, set to 0 to disable.">help_outline</span></label>
                     <div class="number-input-group"><input type="number" class="chain-rh" value="${chain.resize_height_before_upscale}" min="0"><span>px</span></div>
                 </div>
-                <p class="help-text mt-10">Resize each image to this height before upscaling, set to 0 to disable.</p>
                 <div class="input-row align-center mt-10">
-                    <label style="min-width:140px;">Resize Width Before Upscale</label>
+                    <label style="min-width:140px;">Resize Width Before Upscale <span class="material-icons info-icon" data-tooltip="Resize each image to this width before upscaling, set to 0 to disable.">help_outline</span></label>
                     <div class="number-input-group"><input type="number" class="chain-rw" value="${chain.resize_width_before_upscale}" min="0"><span>px</span></div>
                 </div>
-                <p class="help-text mt-10">Resize each image to this width before upscaling, set to 0 to disable.</p>
                 <div class="input-row align-center mt-10">
-                    <label style="min-width:140px;">Resize Factor Before Upscale</label>
+                    <label style="min-width:140px;">Resize Factor Before Upscale <span class="material-icons info-icon" data-tooltip="Resize each image by this factor before upscaling. Ignored if Resize Height is specified.">help_outline</span></label>
                     <div class="number-input-group"><input type="number" class="chain-rf" value="${chain.resize_factor_before_upscale}" min="0"><span>%</span></div>
                 </div>
-                <p class="help-text mt-10">Resize each image by this factor before upscaling. This setting is ignored if Resize Height Before Upscale is specified.</p>
                 <div class="input-row align-center mt-10">
-                    <label style="min-width:140px;">Model</label>
+                    <label style="min-width:140px;">Model <span class="material-icons info-icon" data-tooltip="The upscaling model to run. Select No Model to skip upscaling for this chain.">help_outline</span></label>
                     <select class="chain-model">${modelOptions}</select>
                     <button class="btn btn-secondary chain-open-models-btn" style="margin-left:5px;"><span class="material-icons">folder_open</span> Open Models Directory</button>
                 </div>
-                <p class="help-text mt-10">The upscaling model to run. To choose from more models, add PyTorch (*.pth) model files to the models directory. Select No Model to skip running any upscaling model for this chain.</p>
                 <div class="input-row align-center mt-10">
-                    <label style="min-width:140px;">Model Tile Size</label>
+                    <label style="min-width:140px;">Model Tile Size <span class="material-icons info-icon" title="Tile size to use. Larger is better if VRAM allows. Auto is recommended.">help_outline</span></label>
                     <div class="number-input-group">
                         <select class="chain-tile" style="width:160px;">
                             <option value="Auto (Estimate)" ${chain.model_tile_size === "Auto (Estimate)" ? "selected" : ""}>Auto (Estimate)</option>
@@ -513,7 +530,6 @@ function renderChains(wf: UpscaleWorkflow) {
                         <span>px</span>
                     </div>
                 </div>
-                <p class="help-text mt-10">Tile size to use when upscaling images with the selected model. The image is cut into tiles in order to upscale without running into the VRAM limits of your GPU. Larger is better when the GPU has enough VRAM to support it. The auto setting estimates the largest tile size which can be used based on available VRAM and is recommended for most users.</p>
             </div>
         `;
         chainsContainer.appendChild(card);
@@ -623,7 +639,18 @@ function formatTime(secs: number): string {
 function appendConsole(msg: string, type: string = '') {
     const div = document.createElement("div");
     div.className = `console-line ${type}`;
-    div.textContent = msg;
+    
+    const timestamp = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const timeSpan = document.createElement("span");
+    timeSpan.className = "console-time";
+    timeSpan.textContent = `[${timestamp}] `;
+    
+    const msgSpan = document.createElement("span");
+    msgSpan.textContent = msg;
+    
+    div.appendChild(timeSpan);
+    div.appendChild(msgSpan);
+    
     consoleOutput.appendChild(div);
     consoleOutput.scrollTop = consoleOutput.scrollHeight;
 }
@@ -751,12 +778,14 @@ function setupEventListeners() {
     });
 
     // Workflow Actions
-    addWorkflowBtn.addEventListener("click", () => {
+    const handleAddWorkflow = () => {
         const newWf = new UpscaleWorkflow(`Custom Workflow ${appSettings.workflows.length}`);
         appSettings.workflows.push(newWf);
         currentWorkflowIndex = appSettings.workflows.length - 1;
         renderWorkflow();
-    });
+    };
+    
+    document.getElementById("sidebar-add-workflow-btn")?.addEventListener("click", handleAddWorkflow);
 
     importWorkflowBtn.addEventListener("click", async () => {
         const file = await open({ directory: false, filters: [{ name: "JSON", extensions: ["json"] }] });
@@ -807,6 +836,70 @@ function setupEventListeners() {
         consolePanel.style.display = "none";
         toggleConsoleBtn.classList.remove("toggle-active");
     });
+    
+    const clearConsoleBtn = document.getElementById("clear-console-btn");
+    if (clearConsoleBtn) {
+        clearConsoleBtn.addEventListener("click", () => {
+            consoleOutput.innerHTML = "";
+        });
+    }
+
+    const floatConsoleBtn = document.getElementById("float-console-btn");
+    if (floatConsoleBtn) {
+        floatConsoleBtn.addEventListener("click", () => {
+            const isFloating = consolePanel.classList.toggle("floating");
+            floatConsoleBtn.innerHTML = isFloating 
+                ? '<span class="material-icons" style="font-size: 16px;">open_in_browser</span>' 
+                : '<span class="material-icons" style="font-size: 16px;">open_in_new</span>';
+            floatConsoleBtn.setAttribute("data-tooltip", isFloating ? "Dock Console" : "Float Console");
+            
+            if (isFloating) {
+                // Set explicit top/left so the bottom-right resize handle works natively
+                const rect = consolePanel.getBoundingClientRect();
+                consolePanel.style.left = `${window.innerWidth - 624}px`;
+                consolePanel.style.top = `${window.innerHeight - 424}px`;
+                consolePanel.style.bottom = "auto";
+                consolePanel.style.right = "auto";
+            } else {
+                consolePanel.style.top = "";
+                consolePanel.style.left = "";
+                consolePanel.style.bottom = "";
+                consolePanel.style.right = "";
+                consolePanel.style.width = "";
+                consolePanel.style.height = "";
+            }
+        });
+
+        let isDraggingConsole = false;
+        let dragStartX = 0, dragStartY = 0;
+        let consoleStartX = 0, consoleStartY = 0;
+        const consoleHeader = consolePanel.querySelector(".console-header") as HTMLElement;
+
+        consoleHeader.addEventListener("mousedown", (e) => {
+            if (!consolePanel.classList.contains("floating") || (e.target as HTMLElement).closest('.btn-icon')) return;
+            isDraggingConsole = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            const rect = consolePanel.getBoundingClientRect();
+            consoleStartX = rect.left;
+            consoleStartY = rect.top;
+            e.preventDefault();
+        });
+
+        document.addEventListener("mousemove", (e) => {
+            if (!isDraggingConsole) return;
+            const dx = e.clientX - dragStartX;
+            const dy = e.clientY - dragStartY;
+            consolePanel.style.left = `${consoleStartX + dx}px`;
+            consolePanel.style.top = `${consoleStartY + dy}px`;
+            consolePanel.style.bottom = "auto";
+            consolePanel.style.right = "auto";
+        });
+
+        document.addEventListener("mouseup", () => {
+            isDraggingConsole = false;
+        });
+    }
 
     document.getElementById("default-workflow-btn")!.addEventListener("click", () => {
         currentWorkflowIndex = 0;
