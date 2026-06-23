@@ -95,18 +95,6 @@ Models can also be downloaded directly from within the GUI.
 └── README.md
 ```
 
-## Differences from MangaJaNaiConverterGui
-
-This is a cross-platform fork utilizing modern web tech. Key changes:
-
-| Area | Upstream (Windows) | This fork (Cross-Platform) |
-|------|-------------------|-------------------|
-| **GUI** | Avalonia/C# | Tauri / Vite (TypeScript + Rust) |
-| **GPU backend** | NVIDIA CUDA + DirectML | AMD ROCm via HIP (Linux) + NVIDIA CUDA |
-| **Model loading** | Unloads previous model on chain switch | **Keeps all models in VRAM** concurrently |
-| **Python Env** | Built-in installer | Isolated `uv` + python-runtime + Setup Wizard |
-| **VRAM cleanup** | — | Clears `loaded_models` + GC + `empty_cache` |
-
 ## Troubleshooting
 
 **Linux: Slow performance / low power draw (MCLK stuck at 96Mhz) on AMD:**
